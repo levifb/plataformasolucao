@@ -3,7 +3,7 @@ from datetime import date
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import Aluno, Aula, Nivel
+from .models import Aluno, Aula, Material, Nivel
 
 
 class PlataformaTests(TestCase):
@@ -46,6 +46,14 @@ class PlataformaTests(TestCase):
         self.client.login(username='aluno@teste.com', password='senha123')
         resp = self.client.get(reverse('aula_detalhe', args=[self.aula_n1.pk]))
         self.assertContains(resp, 'youtube.com/embed/abc123XYZ')
+
+    def test_materiais_mostra_so_do_nivel(self):
+        Material.objects.create(titulo='Lista N1', nivel=self.n1, arquivo='materiais_avulsos/a.pdf')
+        Material.objects.create(titulo='Lista N2', nivel=self.n2, arquivo='materiais_avulsos/b.pdf')
+        self.client.login(username='aluno@teste.com', password='senha123')
+        resp = self.client.get(reverse('materiais'))
+        self.assertContains(resp, 'Lista N1')
+        self.assertNotContains(resp, 'Lista N2')
 
     def test_extracao_youtube_id(self):
         aula = self.aula_n1

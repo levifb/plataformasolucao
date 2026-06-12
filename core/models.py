@@ -89,13 +89,34 @@ class Aula(models.Model):
 
     @property
     def youtube_id(self):
-        """Extrai o ID do vídeo de links como youtube.com/watch?v=X, youtu.be/X e youtube.com/live/X."""
-        if not self.link_gravacao:
-            return None
-        link = self.link_gravacao
-        if 'watch?v=' in link:
-            return link.split('watch?v=')[1].split('&')[0]
-        for prefixo in ('youtu.be/', '/embed/', '/live/'):
-            if prefixo in link:
-                return link.split(prefixo)[1].split('?')[0].strip('/')
+        return _youtube_id(self.link_gravacao)
+
+
+class Material(models.Model):
+    titulo = models.CharField('título', max_length=200)
+    nivel = models.ForeignKey(
+        Nivel, verbose_name='nível', on_delete=models.PROTECT, related_name='materiais'
+    )
+    descricao = models.TextField('descrição', blank=True)
+    arquivo = models.FileField('arquivo (PDF)', upload_to='materiais_avulsos/')
+    criado_em = models.DateTimeField('postado em', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'material'
+        verbose_name_plural = 'materiais'
+        ordering = ['-criado_em']
+
+    def __str__(self):
+        return f'{self.titulo} — {self.nivel.nome}'
+
+
+def _youtube_id(link):
+    """Extrai o ID do vídeo de links como youtube.com/watch?v=X, youtu.be/X e youtube.com/live/X."""
+    if not link:
         return None
+    if 'watch?v=' in link:
+        return link.split('watch?v=')[1].split('&')[0]
+    for prefixo in ('youtu.be/', '/embed/', '/live/'):
+        if prefixo in link:
+            return link.split(prefixo)[1].split('?')[0].strip('/')
+    return None

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from .models import Aluno, Aula, Nivel
+from .models import Aluno, Aula, Material, Nivel
 
 admin.site.site_header = 'Curso Solução — Administração'
 admin.site.site_title = 'Curso Solução'
@@ -51,6 +51,13 @@ class AulaAdmin(admin.ModelAdmin):
     @admin.display(description='gravação', boolean=True)
     def tem_gravacao(self, obj):
         return bool(obj.link_gravacao)
+
+
+@admin.register(Material)
+class MaterialAdmin(admin.ModelAdmin):
+    list_display = ('titulo', 'nivel', 'criado_em')
+    list_filter = ('nivel',)
+    search_fields = ('titulo', 'descricao')
 
 
 @admin.register(Nivel)

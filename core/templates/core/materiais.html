@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Materiais — Curso Solução{% endblock %}
+
+{% block conteudo %}
+<h1>Materiais</h1>
+<p style="color:var(--cinza); margin-bottom:1.2rem;">Materiais das próximas aulas do seu nível.</p>
+
+{% if niveis|length > 1 %}
+<div class="filtros">
+    <a href="{% url 'materiais' %}" {% if not nivel_filtro %}class="ativo"{% endif %}>Todos</a>
+    {% for nivel in niveis %}
+    <a href="?nivel={{ nivel.numero }}" {% if nivel_filtro == nivel.numero %}class="ativo"{% endif %}>{{ nivel.nome }}</a>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% for material in materiais %}
+<div class="cartao">
+    <div class="cartao-titulo">{{ material.titulo }}</div>
+    <div class="cartao-meta">
+        <span class="selo selo-azul">{{ material.nivel.nome }}</span>
+        <span>{{ material.criado_em|date:"d/m/Y" }}</span>
+    </div>
+    {% if material.descricao %}<div class="cartao-texto">{{ material.descricao }}</div>{% endif %}
+    <p style="margin-top:.8rem;"><a class="botao botao-azul" href="{{ material.arquivo.url }}" target="_blank">📄 Baixar material</a></p>
+</div>
+{% empty %}
+<p class="aviso-vazio">Nenhum material publicado ainda. Volte em breve!</p>
+{% endfor %}
+{% endblock %}

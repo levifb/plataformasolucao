@@ -1,7 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, render
 
-from .models import Aula
+from .models import Aula, Material
 
 
 @login_required
@@ -16,6 +16,23 @@ def home(request):
 
     return render(request, 'core/home.html', {
         'aulas': aulas,
+        'niveis': niveis,
+        'nivel_filtro': nivel_filtro,
+    })
+
+
+@login_required
+def materiais(request):
+    niveis = request.user.niveis.all()
+    lista = Material.objects.filter(nivel__in=niveis).select_related('nivel')
+
+    nivel_filtro = request.GET.get('nivel')
+    nivel_filtro = int(nivel_filtro) if nivel_filtro and nivel_filtro.isdigit() else None
+    if nivel_filtro:
+        lista = lista.filter(nivel__numero=nivel_filtro)
+
+    return render(request, 'core/materiais.html', {
+        'materiais': lista,
         'niveis': niveis,
         'nivel_filtro': nivel_filtro,
     })

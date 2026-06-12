@@ -15,7 +15,8 @@
         </a>
         {% if user.is_authenticated %}
         <nav class="menu">
-            <a href="{% url 'home' %}" {% if '/comunidade/' not in request.path %}class="ativo"{% endif %}>Aulas</a>
+            <a href="{% url 'home' %}" {% if '/comunidade/' not in request.path and '/materiais/' not in request.path %}class="ativo"{% endif %}>Aulas</a>
+            <a href="{% url 'materiais' %}" {% if '/materiais/' in request.path %}class="ativo"{% endif %}>Materiais</a>
             <a href="{% url 'comunidade' %}" {% if '/comunidade/' in request.path %}class="ativo"{% endif %}>Comunidade</a>
             <form method="post" action="{% url 'logout' %}" class="form-sair">
                 {% csrf_token %}
