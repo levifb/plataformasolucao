@@ -3,7 +3,11 @@
 {% block titulo %}Entrar — Curso Solução{% endblock %}
 
 {% block conteudo %}
+{% load static %}
 <div class="caixa-login">
+    <div class="login-logo">
+        <img src="{% static 'img/logosolucao.png' %}" alt="Curso Solução">
+    </div>
     <h1>Bem-vindo(a)!</h1>
     <p class="login-marca">Plataforma do aluno</p>
 

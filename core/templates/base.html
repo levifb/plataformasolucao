@@ -10,7 +10,9 @@
 <body>
 <header class="topo">
     <div class="topo-conteudo">
-        <a href="{% url 'home' %}" class="marca">Curso Solução</a>
+        <a href="{% url 'home' %}" class="marca">
+            <img src="{% static 'img/logosolucao.png' %}" alt="Curso Solução">
+        </a>
         {% if user.is_authenticated %}
         <nav class="menu">
             <a href="{% url 'home' %}" {% if '/comunidade/' not in request.path %}class="ativo"{% endif %}>Aulas</a>
