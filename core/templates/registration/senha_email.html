@@ -1,0 +1,11 @@
+Olá{% if user.first_name %}, {{ user.first_name }}{% endif %}!
+
+Recebemos um pedido para redefinir a senha da sua conta na plataforma do Curso Solução.
+
+Para criar uma nova senha, acesse o link abaixo:
+
+{{ protocol }}://{{ domain }}{% url 'password_reset_confirm' uidb64=uid token=token %}
+
+Se você não pediu a redefinição, pode ignorar este email — sua senha continua a mesma.
+
+Curso Solução — Olimpíadas de Matemática

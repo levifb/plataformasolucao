@@ -189,6 +189,26 @@ input:focus, textarea:focus, select:focus {
 .login-logo img { max-width: 220px; width: 100%; display: block; margin: 0 auto; }
 .caixa-login .botao { width: 100%; margin-top: .5rem; }
 .login-marca { text-align: center; margin-bottom: 1rem; font-size: 1.1rem; font-weight: 700; color: var(--verde); }
+.login-texto { margin-bottom: 1rem; }
+.login-links { text-align: center; margin-top: 1rem; font-size: .9rem; }
+
+/* Busca e paginação */
+.busca { display: flex; gap: .6rem; margin-bottom: 1.2rem; }
+.busca input { flex: 1; }
+.paginacao { display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 1.5rem; }
+.paginacao span { color: var(--cinza); font-size: .9rem; }
+
+/* Ações de comentário */
+.comentario-acoes { display: flex; align-items: center; gap: .8rem; margin-top: .6rem; font-size: .85rem; }
+.comentario-acoes form { display: inline; margin: 0; }
+.comentario-acoes button {
+    background: none;
+    border: none;
+    padding: 0;
+    color: #c0392b;
+    cursor: pointer;
+    font-size: .85rem;
+}
 
 /* Vídeo embedado */
 .video {

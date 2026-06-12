@@ -17,9 +17,28 @@ urlpatterns = [
     path('entrar/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
     path('sair/', auth_views.LogoutView.as_view(), name='logout'),
 
+    # Recuperação de senha. Os templates usam o prefixo "senha_" para não
+    # colidir com os registration/password_reset_*.html do django.contrib.admin.
+    path('senha/esqueci/', auth_views.PasswordResetView.as_view(
+        template_name='registration/senha_esqueci.html',
+        email_template_name='registration/senha_email.html',
+        subject_template_name='registration/senha_assunto.txt',
+    ), name='password_reset'),
+    path('senha/enviado/', auth_views.PasswordResetDoneView.as_view(
+        template_name='registration/senha_enviado.html',
+    ), name='password_reset_done'),
+    path('senha/redefinir/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(
+        template_name='registration/senha_redefinir.html',
+    ), name='password_reset_confirm'),
+    path('senha/concluida/', auth_views.PasswordResetCompleteView.as_view(
+        template_name='registration/senha_concluida.html',
+    ), name='password_reset_complete'),
+
     path('comunidade/', comunidade_views.lista_posts, name='comunidade'),
     path('comunidade/novo/', comunidade_views.novo_post, name='novo_post'),
     path('comunidade/post/<int:pk>/', comunidade_views.post_detalhe, name='post_detalhe'),
+    path('comunidade/comentario/<int:pk>/editar/', comunidade_views.editar_comentario, name='editar_comentario'),
+    path('comunidade/comentario/<int:pk>/excluir/', comunidade_views.excluir_comentario, name='excluir_comentario'),
 ]
 
 if settings.DEBUG:

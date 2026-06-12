@@ -1,6 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, render
 
+from .listagem import filtrar_listagem
 from .models import Aula, Material
 
 
@@ -9,16 +10,9 @@ def home(request):
     niveis = request.user.niveis_visiveis()
     aulas = Aula.objects.filter(nivel__in=niveis).select_related('nivel')
 
-    nivel_filtro = request.GET.get('nivel')
-    nivel_filtro = int(nivel_filtro) if nivel_filtro and nivel_filtro.isdigit() else None
-    if nivel_filtro:
-        aulas = aulas.filter(nivel__numero=nivel_filtro)
-
-    return render(request, 'core/home.html', {
-        'aulas': aulas,
-        'niveis': niveis,
-        'nivel_filtro': nivel_filtro,
-    })
+    contexto = filtrar_listagem(request, aulas, campos_busca=['titulo'])
+    contexto.update({'aulas': contexto['pagina'], 'niveis': niveis})
+    return render(request, 'core/home.html', contexto)
 
 
 @login_required
@@ -26,16 +20,9 @@ def materiais(request):
     niveis = request.user.niveis_visiveis()
     lista = Material.objects.filter(nivel__in=niveis).select_related('nivel')
 
-    nivel_filtro = request.GET.get('nivel')
-    nivel_filtro = int(nivel_filtro) if nivel_filtro and nivel_filtro.isdigit() else None
-    if nivel_filtro:
-        lista = lista.filter(nivel__numero=nivel_filtro)
-
-    return render(request, 'core/materiais.html', {
-        'materiais': lista,
-        'niveis': niveis,
-        'nivel_filtro': nivel_filtro,
-    })
+    contexto = filtrar_listagem(request, lista, campos_busca=['titulo', 'descricao'])
+    contexto.update({'materiais': contexto['pagina'], 'niveis': niveis})
+    return render(request, 'core/materiais.html', contexto)
 
 
 @login_required

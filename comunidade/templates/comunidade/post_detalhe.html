@@ -24,6 +24,18 @@
         <span>{{ comentario.criado_em|date:"d/m/Y H:i" }}</span>
     </div>
     <div class="cartao-texto">{{ comentario.texto }}</div>
+    {% if comentario.autor == user or user.is_staff %}
+    <div class="comentario-acoes">
+        {% if comentario.autor == user %}
+        <a href="{% url 'editar_comentario' comentario.pk %}">Editar</a>
+        {% endif %}
+        <form method="post" action="{% url 'excluir_comentario' comentario.pk %}"
+              onsubmit="return confirm('Excluir este comentário?');">
+            {% csrf_token %}
+            <button type="submit">Excluir</button>
+        </form>
+    </div>
+    {% endif %}
 </div>
 {% empty %}
 <p class="aviso-vazio">Nenhum comentário ainda.</p>

@@ -1,6 +1,10 @@
 from django import forms
 from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
+
+from core.listagem import filtrar_listagem
 
 from .models import Comentario, Post
 
@@ -25,16 +29,9 @@ def lista_posts(request):
     niveis = request.user.niveis_visiveis()
     posts = Post.objects.filter(nivel__in=niveis).select_related('autor', 'nivel')
 
-    nivel_filtro = request.GET.get('nivel')
-    nivel_filtro = int(nivel_filtro) if nivel_filtro and nivel_filtro.isdigit() else None
-    if nivel_filtro:
-        posts = posts.filter(nivel__numero=nivel_filtro)
-
-    return render(request, 'comunidade/lista_posts.html', {
-        'posts': posts,
-        'niveis': niveis,
-        'nivel_filtro': nivel_filtro,
-    })
+    contexto = filtrar_listagem(request, posts, campos_busca=['titulo', 'texto'])
+    contexto.update({'posts': contexto['pagina'], 'niveis': niveis})
+    return render(request, 'comunidade/lista_posts.html', contexto)
 
 
 @login_required
@@ -70,3 +67,27 @@ def post_detalhe(request, pk):
         'post': post,
         'comentarios': comentarios,
     })
+
+
+@login_required
+def editar_comentario(request, pk):
+    comentario = get_object_or_404(
+        Comentario.objects.select_related('post'), pk=pk, autor=request.user
+    )
+    if request.method == 'POST':
+        texto = request.POST.get('texto', '').strip()
+        if texto:
+            comentario.texto = texto
+            comentario.save()
+            return redirect('post_detalhe', pk=comentario.post_id)
+    return render(request, 'comunidade/editar_comentario.html', {'comentario': comentario})
+
+
+@login_required
+@require_POST
+def excluir_comentario(request, pk):
+    comentario = get_object_or_404(Comentario, pk=pk)
+    if comentario.autor_id != request.user.pk and not request.user.is_staff:
+        return HttpResponseForbidden('Você não pode excluir este comentário.')
+    comentario.delete()
+    return redirect('post_detalhe', pk=comentario.post_id)

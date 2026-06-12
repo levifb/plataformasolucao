@@ -9,12 +9,18 @@
 
 {% if niveis|length > 1 %}
 <div class="filtros">
-    <a href="{% url 'home' %}" {% if not nivel_filtro %}class="ativo"{% endif %}>Todos</a>
+    <a href="{% url 'home' %}{% if busca %}?q={{ busca|urlencode }}{% endif %}" {% if not nivel_filtro %}class="ativo"{% endif %}>Todos</a>
     {% for nivel in niveis %}
-    <a href="?nivel={{ nivel.numero }}" {% if nivel_filtro == nivel.numero %}class="ativo"{% endif %}>{{ nivel.nome }}</a>
+    <a href="?nivel={{ nivel.numero }}{% if busca %}&q={{ busca|urlencode }}{% endif %}" {% if nivel_filtro == nivel.numero %}class="ativo"{% endif %}>{{ nivel.nome }}</a>
     {% endfor %}
 </div>
 {% endif %}
+
+<form method="get" class="busca">
+    {% if nivel_filtro %}<input type="hidden" name="nivel" value="{{ nivel_filtro }}">{% endif %}
+    <input type="search" name="q" value="{{ busca }}" placeholder="Buscar aula pelo título...">
+    <button type="submit" class="botao botao-azul">Buscar</button>
+</form>
 
 {% for aula in aulas %}
 <a class="cartao" href="{% url 'aula_detalhe' aula.pk %}">
@@ -28,6 +34,12 @@
     </div>
 </a>
 {% empty %}
+{% if busca %}
+<p class="aviso-vazio">Nenhuma aula encontrada para "{{ busca }}".</p>
+{% else %}
 <p class="aviso-vazio">Nenhuma aula publicada ainda. Volte em breve!</p>
+{% endif %}
 {% endfor %}
+
+{% include 'core/_paginacao.html' %}
 {% endblock %}

@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Nova senha — Curso Solução{% endblock %}
+
+{% block conteudo %}
+<div class="caixa-login">
+    {% if validlink %}
+    <h1>Criar nova senha</h1>
+
+    {% if form.errors %}
+    <div class="erros">
+        {% for field in form %}{% for erro in field.errors %}<p>{{ erro }}</p>{% endfor %}{% endfor %}
+        {% for erro in form.non_field_errors %}<p>{{ erro }}</p>{% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        <p>
+            <label for="id_new_password1">Nova senha</label>
+            <input type="password" name="new_password1" id="id_new_password1" required autofocus>
+        </p>
+        <p>
+            <label for="id_new_password2">Confirme a nova senha</label>
+            <input type="password" name="new_password2" id="id_new_password2" required>
+        </p>
+        <button type="submit" class="botao">Salvar nova senha</button>
+    </form>
+    {% else %}
+    <h1>Link inválido</h1>
+    <p class="login-texto">
+        Este link de recuperação já foi usado ou expirou.
+        Peça um novo link para redefinir sua senha.
+    </p>
+    <p class="login-links"><a href="{% url 'password_reset' %}">Pedir novo link</a></p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,5 +1,7 @@
+import re
 from datetime import date
 
+from django.core import mail
 from django.test import TestCase
 from django.urls import reverse
 
@@ -62,6 +64,85 @@ class PlataformaTests(TestCase):
         resp = self.client.get(reverse('home'))
         self.assertContains(resp, 'Contagem')
         self.assertContains(resp, 'Indução')
+
+    def test_busca_por_titulo(self):
+        self.client.login(username='aluno@teste.com', password='senha123')
+        resp = self.client.get(reverse('home'), {'q': 'conta'})
+        self.assertContains(resp, 'Contagem')
+        resp = self.client.get(reverse('home'), {'q': 'inexistente'})
+        self.assertNotContains(resp, 'Contagem')
+        self.assertContains(resp, 'Nenhuma aula encontrada')
+
+    def test_paginacao_de_aulas(self):
+        # Com a aula do setUp, o aluno passa a ver 13 aulas: 10 na página 1 e 3 na 2.
+        for i in range(12):
+            Aula.objects.create(titulo=f'Aula extra {i}', data=date(2026, 7, 1), nivel=self.n1)
+        self.client.login(username='aluno@teste.com', password='senha123')
+        resp = self.client.get(reverse('home'))
+        self.assertEqual(len(resp.context['pagina'].object_list), 10)
+        self.assertContains(resp, 'Página 1 de 2')
+        resp = self.client.get(reverse('home'), {'pagina': 2})
+        self.assertEqual(len(resp.context['pagina'].object_list), 3)
+
+    def test_paginacao_preserva_filtros(self):
+        for i in range(12):
+            Aula.objects.create(titulo=f'Aula extra {i}', data=date(2026, 7, 1), nivel=self.n1)
+        self.client.login(username='aluno@teste.com', password='senha123')
+        resp = self.client.get(reverse('home'), {'nivel': 1, 'q': 'extra'})
+        self.assertContains(resp, 'nivel=1&amp;q=extra&amp;pagina=2')
+
+    def test_recuperacao_de_senha(self):
+        mail.outbox.clear()
+        resp = self.client.post(reverse('password_reset'), {'email': 'aluno@teste.com'})
+        self.assertRedirects(resp, reverse('password_reset_done'))
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ['aluno@teste.com'])
+
+        link = re.search(r'http://testserver(/senha/redefinir/\S+)', mail.outbox[0].body)
+        self.assertIsNotNone(link)
+        # O GET no link redireciona para a URL com token de sessão, onde fica o formulário.
+        resp = self.client.get(link.group(1), follow=True)
+        self.assertContains(resp, 'Criar nova senha')
+
+        url_form = resp.request['PATH_INFO']
+        resp = self.client.post(url_form, {
+            'new_password1': 'NovaSenha#2026',
+            'new_password2': 'NovaSenha#2026',
+        })
+        self.assertRedirects(resp, reverse('password_reset_complete'))
+        self.assertTrue(self.client.login(username='aluno@teste.com', password='NovaSenha#2026'))
+
+    def test_email_desconhecido_nao_revela_cadastro(self):
+        mail.outbox.clear()
+        resp = self.client.post(reverse('password_reset'), {'email': 'naoexiste@teste.com'})
+        self.assertRedirects(resp, reverse('password_reset_done'))
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_nova_aula_avisa_alunos_do_nivel(self):
+        mail.outbox.clear()
+        aula = Aula.objects.create(titulo='Grafos', data=date(2026, 6, 15), nivel=self.n1)
+        self.assertEqual(len(mail.outbox), 1)
+        aviso = mail.outbox[0]
+        self.assertEqual(aviso.subject, 'Nova aula: Grafos')
+        self.assertEqual(aviso.bcc, ['aluno@teste.com'])
+        self.assertIn(reverse('aula_detalhe', args=[aula.pk]), aviso.body)
+        # Editar a aula não dispara novo aviso.
+        aula.titulo = 'Grafos e árvores'
+        aula.save()
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_nova_aula_sem_alunos_no_nivel_nao_envia_email(self):
+        mail.outbox.clear()
+        Aula.objects.create(titulo='Funções', data=date(2026, 6, 16), nivel=self.n2)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_novo_material_avisa_alunos_do_nivel(self):
+        mail.outbox.clear()
+        Material.objects.create(titulo='Lista 5', nivel=self.n1, arquivo='materiais_avulsos/l5.pdf')
+        self.assertEqual(len(mail.outbox), 1)
+        aviso = mail.outbox[0]
+        self.assertEqual(aviso.subject, 'Novo material: Lista 5')
+        self.assertEqual(aviso.bcc, ['aluno@teste.com'])
 
     def test_extracao_drive_id(self):
         aula = self.aula_n1

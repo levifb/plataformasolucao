@@ -45,6 +45,56 @@ para gerenciar tudo.
 3. **Moderar a comunidade:** Admin → Posts / Comentários permite editar ou
    apagar qualquer publicação.
 
+## Publicar no PythonAnywhere (produção)
+
+O site fica em `https://SEUUSUARIO.pythonanywhere.com` (plano gratuito).
+
+1. **Criar a conta:** em https://www.pythonanywhere.com, crie uma conta
+   "Beginner" (gratuita). O nome de usuário escolhido vira o endereço do site.
+2. **Enviar o código:** na aba **Files**, faça upload do projeto zipado e
+   descompacte num console Bash (`unzip plataforma.zip`), ou clone do GitHub.
+3. **Instalar e preparar** (num console Bash, dentro da pasta do projeto):
+
+   ```bash
+   pip3.13 install --user -r requirements.txt
+   python3.13 manage.py migrate
+   python3.13 manage.py createsuperuser
+   python3.13 manage.py collectstatic --noinput
+   ```
+
+4. **Criar o `.env` de produção** na pasta do projeto, copiando o
+   `.env.exemplo` e preenchendo tudo — inclusive o bloco "Apenas em produção"
+   (SECRET_KEY nova, `DEBUG=False`, `ALLOWED_HOSTS` e `SITE_URL` com seu
+   endereço real).
+5. **Criar o web app:** aba **Web** → *Add a new web app* → *Manual
+   configuration* → Python 3.13. Em seguida:
+   - **Source code / Working directory:** a pasta do projeto;
+   - **WSGI configuration file:** apague o conteúdo e deixe apenas:
+
+     ```python
+     import sys
+     sys.path.insert(0, '/home/SEUUSUARIO/plataforma')  # pasta do projeto
+
+     import os
+     os.environ['DJANGO_SETTINGS_MODULE'] = 'config.settings'
+
+     from django.core.wsgi import get_wsgi_application
+     application = get_wsgi_application()
+     ```
+
+   - **Static files:** mapeie `/static/` → `/home/SEUUSUARIO/plataforma/staticfiles`
+     e `/media/` → `/home/SEUUSUARIO/plataforma/media`.
+6. **Reload** (botão verde na aba Web) e pronto.
+
+Observações do plano gratuito:
+
+- O envio de email pelo Gmail (`smtp.gmail.com`) funciona normalmente — é um
+  dos servidores liberados para contas gratuitas.
+- A cada 3 meses o PythonAnywhere pede um clique em **"Run until..."** na aba
+  Web para manter o site no ar (eles avisam por email).
+- Para usar domínio próprio (ex.: `plataforma.cursosolucao.com.br`), é preciso
+  o plano pago (US$ 5/mês), que também remove o limite de tráfego.
+
 ## Rodar os testes
 
 ```bash

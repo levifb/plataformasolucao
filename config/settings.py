@@ -10,22 +10,37 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Carrega variáveis do arquivo .env (credenciais fora do git), se ele existir.
+# Variáveis já definidas no ambiente têm prioridade sobre o arquivo.
+_env = BASE_DIR / '.env'
+if _env.exists():
+    for _linha in _env.read_text(encoding='utf-8').splitlines():
+        _linha = _linha.strip()
+        if _linha and not _linha.startswith('#') and '=' in _linha:
+            _chave, _, _valor = _linha.partition('=')
+            os.environ.setdefault(_chave.strip(), _valor.strip())
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-%d2$u3s1#lp0clao7(u(_a_=4qpzk7hu3z$1q0+@mk6c3whc3d'
+# Em produção, defina SECRET_KEY, DEBUG=False e ALLOWED_HOSTS no .env do servidor.
+SECRET_KEY = os.environ.get(
+    'SECRET_KEY',
+    'django-insecure-%d2$u3s1#lp0clao7(u(_a_=4qpzk7hu3z$1q0+@mk6c3whc3d',
+)
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True').lower() != 'false'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    h.strip() for h in os.environ.get('ALLOWED_HOSTS', '').split(',') if h.strip()
+]
 
 
 # Application definition
@@ -118,6 +133,7 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+STATIC_ROOT = BASE_DIR / 'staticfiles'  # destino do collectstatic em produção
 
 # Arquivos enviados (PDFs de material e resolução)
 MEDIA_URL = 'media/'
@@ -128,5 +144,30 @@ AUTH_USER_MODEL = 'core.Aluno'
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'login'
+
+# Email (recuperação de senha e avisos de aula/material novos).
+# Em desenvolvimento os emails aparecem no terminal; em produção,
+# defina as variáveis de ambiente EMAIL_HOST, EMAIL_HOST_USER etc.
+if DEBUG and not os.environ.get('EMAIL_HOST'):
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+else:
+    EMAIL_HOST = os.environ.get('EMAIL_HOST', '')
+    EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
+    EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+    EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+    EMAIL_USE_TLS = True
+
+DEFAULT_FROM_EMAIL = os.environ.get(
+    'DEFAULT_FROM_EMAIL', 'Curso Solução <nao-responda@cursosolucao.com>'
+)
+
+# Endereço público da plataforma, usado nos links dos emails de aviso.
+SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000')
+
+# Endurecimento aplicado apenas em produção (DEBUG=False).
+if not DEBUG:
+    CSRF_TRUSTED_ORIGINS = [SITE_URL]
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

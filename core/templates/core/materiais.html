@@ -12,12 +12,18 @@
 
 {% if niveis|length > 1 %}
 <div class="filtros">
-    <a href="{% url 'materiais' %}" {% if not nivel_filtro %}class="ativo"{% endif %}>Todos</a>
+    <a href="{% url 'materiais' %}{% if busca %}?q={{ busca|urlencode }}{% endif %}" {% if not nivel_filtro %}class="ativo"{% endif %}>Todos</a>
     {% for nivel in niveis %}
-    <a href="?nivel={{ nivel.numero }}" {% if nivel_filtro == nivel.numero %}class="ativo"{% endif %}>{{ nivel.nome }}</a>
+    <a href="?nivel={{ nivel.numero }}{% if busca %}&q={{ busca|urlencode }}{% endif %}" {% if nivel_filtro == nivel.numero %}class="ativo"{% endif %}>{{ nivel.nome }}</a>
     {% endfor %}
 </div>
 {% endif %}
+
+<form method="get" class="busca">
+    {% if nivel_filtro %}<input type="hidden" name="nivel" value="{{ nivel_filtro }}">{% endif %}
+    <input type="search" name="q" value="{{ busca }}" placeholder="Buscar material por título ou descrição...">
+    <button type="submit" class="botao botao-azul">Buscar</button>
+</form>
 
 {% for material in materiais %}
 <div class="cartao">
@@ -30,6 +36,12 @@
     <p style="margin-top:.8rem;"><a class="botao botao-azul" href="{{ material.arquivo.url }}" target="_blank">📄 Baixar material</a></p>
 </div>
 {% empty %}
+{% if busca %}
+<p class="aviso-vazio">Nenhum material encontrado para "{{ busca }}".</p>
+{% else %}
 <p class="aviso-vazio">Nenhum material publicado ainda. Volte em breve!</p>
+{% endif %}
 {% endfor %}
+
+{% include 'core/_paginacao.html' %}
 {% endblock %}
