@@ -55,6 +55,13 @@ class PlataformaTests(TestCase):
         self.assertContains(resp, 'Lista N1')
         self.assertNotContains(resp, 'Lista N2')
 
+    def test_admin_ve_aulas_de_todos_os_niveis(self):
+        Aluno.objects.create_superuser('admin@teste.com', 'senha123', first_name='Admin')
+        self.client.login(username='admin@teste.com', password='senha123')
+        resp = self.client.get(reverse('home'))
+        self.assertContains(resp, 'Contagem')
+        self.assertContains(resp, 'Indução')
+
     def test_extracao_youtube_id(self):
         aula = self.aula_n1
         aula.link_gravacao = 'https://youtu.be/xyz789'

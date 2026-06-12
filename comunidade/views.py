@@ -16,13 +16,13 @@ class PostForm(forms.ModelForm):
 
     def __init__(self, *args, aluno=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['nivel'].queryset = aluno.niveis.all()
+        self.fields['nivel'].queryset = aluno.niveis_visiveis()
         self.fields['nivel'].empty_label = None
 
 
 @login_required
 def lista_posts(request):
-    niveis = request.user.niveis.all()
+    niveis = request.user.niveis_visiveis()
     posts = Post.objects.filter(nivel__in=niveis).select_related('autor', 'nivel')
 
     nivel_filtro = request.GET.get('nivel')
@@ -56,7 +56,7 @@ def post_detalhe(request, pk):
     post = get_object_or_404(
         Post.objects.select_related('autor', 'nivel'),
         pk=pk,
-        nivel__in=request.user.niveis.all(),
+        nivel__in=request.user.niveis_visiveis(),
     )
     if request.method == 'POST':
         texto = request.POST.get('texto', '').strip()

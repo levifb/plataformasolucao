@@ -6,7 +6,7 @@ from .models import Aula, Material
 
 @login_required
 def home(request):
-    niveis = request.user.niveis.all()
+    niveis = request.user.niveis_visiveis()
     aulas = Aula.objects.filter(nivel__in=niveis).select_related('nivel')
 
     nivel_filtro = request.GET.get('nivel')
@@ -23,7 +23,7 @@ def home(request):
 
 @login_required
 def materiais(request):
-    niveis = request.user.niveis.all()
+    niveis = request.user.niveis_visiveis()
     lista = Material.objects.filter(nivel__in=niveis).select_related('nivel')
 
     nivel_filtro = request.GET.get('nivel')
@@ -43,6 +43,6 @@ def aula_detalhe(request, pk):
     aula = get_object_or_404(
         Aula.objects.select_related('nivel'),
         pk=pk,
-        nivel__in=request.user.niveis.all(),
+        nivel__in=request.user.niveis_visiveis(),
     )
     return render(request, 'core/aula_detalhe.html', {'aula': aula})

@@ -60,6 +60,12 @@ class Aluno(AbstractUser):
     def __str__(self):
         return self.get_full_name() or self.email
 
+    def niveis_visiveis(self):
+        """Administradores (staff) enxergam todos os níveis; alunos, só os seus."""
+        if self.is_staff:
+            return Nivel.objects.all()
+        return self.niveis.all()
+
 
 class Aula(models.Model):
     titulo = models.CharField('título', max_length=200)
