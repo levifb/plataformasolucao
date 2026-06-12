@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Nova aula no calendário — Curso Solução{% endblock %}
+
+{% block conteudo %}
+<a class="voltar" href="{% url 'calendario' %}">&larr; Voltar para o calendário</a>
+
+<h1>Nova aula no calendário<span class="qed" aria-hidden="true"></span></h1>
+<p class="sub">A aula aparece no calendário de todos os alunos do nível escolhido.</p>
+
+<div class="cartao">
+    <form method="post">
+        {% csrf_token %}
+        {% if form.errors %}
+        <div class="erros">
+            {% for field in form %}{% for erro in field.errors %}<p>{{ field.label }}: {{ erro }}</p>{% endfor %}{% endfor %}
+            {% for erro in form.non_field_errors %}<p>{{ erro }}</p>{% endfor %}
+        </div>
+        {% endif %}
+        <p>
+            <label for="{{ form.nivel.id_for_label }}">Nível</label>
+            {{ form.nivel }}
+        </p>
+        <p>
+            <label for="{{ form.data.id_for_label }}">Data da aula</label>
+            {{ form.data }}
+        </p>
+        <p>
+            <label for="{{ form.hora_inicio.id_for_label }}">Horário de início</label>
+            {{ form.hora_inicio }}
+        </p>
+        <p>
+            <label for="{{ form.hora_fim.id_for_label }}">Horário de fim</label>
+            {{ form.hora_fim }}
+        </p>
+        <p>
+            <label for="{{ form.link_meet.id_for_label }}">Link do Meet (opcional)</label>
+            {{ form.link_meet }}
+            <span class="ajuda-campo">Se ficar em branco, a aula usa o link do Meet do nível.</span>
+        </p>
+        <button type="submit" class="botao">Cadastrar aula</button>
+    </form>
+</div>
+{% endblock %}

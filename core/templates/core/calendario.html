@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Calendário — Curso Solução{% endblock %}
+
+{% block conteudo %}
+<h1>Calendário<span class="qed" aria-hidden="true"></span></h1>
+<p class="sub">Os dias de aula do seu nível e os links das aulas ao vivo.</p>
+
+<nav class="subabas">
+    <a href="{% url 'home' %}">Aulas</a>
+    <a href="{% url 'calendario' %}" class="ativo">Calendário</a>
+</nav>
+
+{% if user.is_staff %}
+<p class="acao-admin">
+    <a class="botao botao-borda" href="{% url 'nova_aula_calendario' %}">+ Nova aula no calendário</a>
+    <a class="botao botao-borda" href="{% url 'cancelar_aula_calendario' %}">Cancelar aula da grade</a>
+</p>
+{% endif %}
+
+<h2>Próximas aulas do seu nível</h2>
+{% for mes in meses %}
+<section class="cal-mes">
+    <h3 class="cal-titulo">{{ mes.nome }}</h3>
+    <div class="cal-grade" role="grid" aria-label="{{ mes.nome }}">
+        <span class="cal-dia-semana">dom</span>
+        <span class="cal-dia-semana">seg</span>
+        <span class="cal-dia-semana">ter</span>
+        <span class="cal-dia-semana">qua</span>
+        <span class="cal-dia-semana">qui</span>
+        <span class="cal-dia-semana">sex</span>
+        <span class="cal-dia-semana">sáb</span>
+        {% for semana in mes.semanas %}
+        {% for dia in semana %}
+        <div class="cal-dia{% if dia.outro_mes %} cal-outro-mes{% endif %}{% if dia.passado %} cal-passado{% endif %}">
+            <span class="cal-numero{% if dia.hoje %} cal-hoje{% endif %}">{{ dia.data.day }}</span>
+            {% for aula in dia.aulas %}
+            <span class="cal-aula" data-info="{{ aula.rotulo|default:aula.nivel.nome }} — {{ aula.hora_inicio|time:'H:i' }} às {{ aula.hora_fim|time:'H:i' }}">{{ aula.hora_inicio|time:"H:i" }} N{{ aula.nivel.numero }}</span>
+            {% endfor %}
+            {% for cancelamento in dia.canceladas %}
+            <span class="cal-aula cal-cancelada" data-info="Aula cancelada{% if cancelamento.motivo %}: {{ cancelamento.motivo }}{% endif %} — {{ cancelamento.horario.rotulo|default:cancelamento.horario.nivel.nome }}, {{ cancelamento.horario.hora_inicio|time:'H:i' }} às {{ cancelamento.horario.hora_fim|time:'H:i' }}">{{ cancelamento.horario.hora_inicio|time:"H:i" }} N{{ cancelamento.horario.nivel.numero }}</span>
+            {% endfor %}
+        </div>
+        {% endfor %}
+        {% endfor %}
+    </div>
+    {% for recesso in mes.recessos %}
+    <p class="cal-recesso">{{ recesso.descricao }} — de {{ recesso.inicio|date:"d/m" }} a {{ recesso.fim|date:"d/m" }}, valem apenas as aulas marcadas no calendário.</p>
+    {% endfor %}
+</section>
+{% endfor %}
+
+<h2>Links das aulas (Meet)</h2>
+{% regroup horarios by nivel as grupos %}
+{% for grupo in grupos %}
+<div class="cartao">
+    <div class="cartao-titulo">{{ grupo.grouper.nome }}</div>
+    {% for h in grupo.list %}
+    <div class="horario-linha">
+        <span class="horario-quando">{{ h.get_dia_semana_display }} · {{ h.hora_inicio|time:"H:i" }}–{{ h.hora_fim|time:"H:i" }}</span>
+        {% if h.rotulo %}<span class="selo selo-verde">{{ h.rotulo }}</span>{% endif %}
+        {% if h.link_meet %}<a class="horario-link" href="{{ h.link_meet }}" target="_blank" rel="noopener">Entrar no Meet &nearr;</a>{% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% empty %}
+<p class="aviso-vazio">Os horários das aulas ainda não foram cadastrados.</p>
+{% endfor %}
+
+{% if user.is_staff %}
+{% if proximos_cancelamentos %}
+<h2>Aulas canceladas</h2>
+<div class="cartao">
+    {% for cancelamento in proximos_cancelamentos %}
+    <div class="horario-linha">
+        <span class="horario-quando">{{ cancelamento.data|date:"d/m/Y" }} · {{ cancelamento.horario.hora_inicio|time:"H:i" }}–{{ cancelamento.horario.hora_fim|time:"H:i" }}</span>
+        <span class="selo">{{ cancelamento.horario.nivel.nome }}</span>
+        {% if cancelamento.horario.rotulo %}<span class="selo selo-verde">{{ cancelamento.horario.rotulo }}</span>{% endif %}
+        {% if cancelamento.motivo %}<span class="horario-motivo">{{ cancelamento.motivo }}</span>{% endif %}
+        <form method="post" action="{% url 'desfazer_cancelamento' cancelamento.pk %}" class="form-desfazer"
+              onsubmit="return confirm('Desfazer o cancelamento? A aula volta ao calendário.');">
+            {% csrf_token %}
+            <button type="submit">Desfazer</button>
+        </form>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

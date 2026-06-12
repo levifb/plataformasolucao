@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Cancelar aula da grade — Curso Solução{% endblock %}
+
+{% block conteudo %}
+<a class="voltar" href="{% url 'calendario' %}">&larr; Voltar para o calendário</a>
+
+<h1>Cancelar aula da grade<span class="qed" aria-hidden="true"></span></h1>
+<p class="sub">A aula aparece riscada no calendário dos alunos do nível, só na data escolhida. Dá para desfazer depois.</p>
+
+<div class="cartao">
+    <form method="post">
+        {% csrf_token %}
+        {% if form.errors %}
+        <div class="erros">
+            {% for field in form %}{% for erro in field.errors %}<p>{{ field.label }}: {{ erro }}</p>{% endfor %}{% endfor %}
+            {% for erro in form.non_field_errors %}<p>{{ erro }}</p>{% endfor %}
+        </div>
+        {% endif %}
+        <p>
+            <label for="{{ form.horario.id_for_label }}">Aula da grade</label>
+            {{ form.horario }}
+        </p>
+        <p>
+            <label for="{{ form.data.id_for_label }}">Data da ocorrência</label>
+            {{ form.data }}
+            <span class="ajuda-campo">A data precisa cair no dia da semana dessa aula.</span>
+        </p>
+        <p>
+            <label for="{{ form.motivo.id_for_label }}">Motivo (opcional)</label>
+            {{ form.motivo }}
+            <span class="ajuda-campo">Se preenchido, os alunos veem o motivo ao passar o mouse sobre a aula cancelada.</span>
+        </p>
+        <button type="submit" class="botao">Cancelar aula</button>
+    </form>
+</div>
+{% endblock %}

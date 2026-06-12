@@ -258,6 +258,180 @@ a.cartao:hover {
     color: var(--verde-escuro);
 }
 
+/* ---------- Sub-abas (Aulas | Calendário) ---------- */
+.subabas {
+    display: flex;
+    gap: 1.4rem;
+    border-bottom: 1px solid var(--borda);
+    margin-bottom: 1.3rem;
+}
+.subabas a {
+    position: relative;
+    color: var(--cinza);
+    text-decoration: none;
+    font-weight: 500;
+    padding: .35rem 0 .55rem;
+    transition: color .15s ease;
+}
+.subabas a:hover { color: var(--tinta); }
+.subabas a.ativo { color: var(--tinta); }
+.subabas a.ativo::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 3px;
+    background: var(--verde);
+}
+
+/* ---------- Horários e links das aulas ---------- */
+.horario-linha {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .4rem 1rem;
+    padding: .55rem 0;
+    border-top: 1px solid var(--borda);
+    margin-top: .55rem;
+}
+.horario-quando {
+    font-family: var(--fonte-mono);
+    font-size: .82rem;
+    color: var(--texto);
+}
+.horario-link {
+    margin-left: auto;
+    font-family: var(--fonte-mono);
+    font-size: .8rem;
+    font-weight: 500;
+    color: var(--verde-escuro);
+    text-decoration: none;
+}
+.horario-link:hover { text-decoration: underline; }
+.horario-motivo {
+    font-size: .85rem;
+    font-style: italic;
+    color: var(--cinza);
+}
+.form-desfazer { margin: 0 0 0 auto; }
+.form-desfazer button {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--verde-escuro);
+    cursor: pointer;
+    font-family: var(--fonte-mono);
+    font-size: .78rem;
+}
+.form-desfazer button:hover { text-decoration: underline; }
+
+/* ---------- Calendário ---------- */
+.cal-mes { margin-bottom: 2.2rem; }
+.cal-titulo {
+    font-family: var(--fonte-titulo);
+    font-weight: 600;
+    font-size: 1.05rem;
+    color: var(--tinta);
+    margin: 1.1rem 0 .6rem;
+}
+.cal-grade {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px;
+    background: var(--borda);
+    border: 1px solid var(--borda);
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(15, 43, 76, .05);
+}
+/* cantos arredondados nas células das pontas (a grade não pode ter
+   overflow:hidden, senão corta o tooltip das aulas) */
+.cal-grade > .cal-dia-semana:first-child { border-top-left-radius: 7px; }
+.cal-grade > .cal-dia-semana:nth-child(7) { border-top-right-radius: 7px; }
+.cal-grade > .cal-dia:nth-last-child(7) { border-bottom-left-radius: 7px; }
+.cal-grade > .cal-dia:last-child { border-bottom-right-radius: 7px; }
+.cal-dia-semana {
+    background: var(--azul-claro);
+    color: var(--azul);
+    font-family: var(--fonte-mono);
+    font-size: .66rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    text-align: center;
+    padding: .35rem 0;
+}
+.cal-dia {
+    background: #fff;
+    min-height: 4.4rem;
+    padding: .3rem .35rem;
+}
+.cal-outro-mes { background: var(--papel); }
+.cal-outro-mes .cal-numero, .cal-passado .cal-numero { color: #b6c3d0; }
+.cal-numero {
+    display: inline-block;
+    font-family: var(--fonte-mono);
+    font-size: .76rem;
+    color: var(--cinza);
+    line-height: 1.4;
+}
+.cal-hoje {
+    background: var(--azul);
+    color: #fff;
+    padding: 0 .3rem;
+    border-radius: 3px;
+}
+.cal-aula {
+    position: relative;
+    display: block;
+    background: var(--verde);
+    color: #fff;
+    font-family: var(--fonte-mono);
+    font-size: .62rem;
+    font-weight: 500;
+    line-height: 1.5;
+    padding: .05rem .3rem;
+    border-radius: 3px;
+    margin-top: .25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.cal-aula[data-info]:hover { overflow: visible; }
+.cal-aula[data-info]:hover::after {
+    content: attr(data-info);
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 6px);
+    transform: translateX(-50%);
+    z-index: 10;
+    width: max-content;
+    max-width: 230px;
+    white-space: normal;
+    text-align: center;
+    background: var(--tinta);
+    color: #fff;
+    font-family: var(--fonte-ui);
+    font-size: .78rem;
+    font-weight: 400;
+    line-height: 1.35;
+    padding: .45rem .65rem;
+    border-radius: 6px;
+    box-shadow: 0 4px 14px rgba(15, 43, 76, .3);
+    pointer-events: none;
+}
+.cal-cancelada {
+    background: #e3e9ef;
+    color: var(--cinza);
+    text-decoration: line-through;
+}
+.cal-recesso {
+    font-family: var(--fonte-titulo);
+    font-style: italic;
+    color: var(--cinza);
+    font-size: .95rem;
+    margin-top: .6rem;
+}
+
 /* ---------- Filtros por nível ---------- */
 .filtros { display: flex; flex-wrap: wrap; gap: .45rem; margin-bottom: 1.1rem; }
 .filtros a {
@@ -302,6 +476,7 @@ a.cartao:hover {
 form p { margin-bottom: .9rem; }
 label { display: block; font-weight: 500; margin-bottom: .3rem; }
 input[type=text], input[type=email], input[type=password], input[type=search],
+input[type=date], input[type=time], input[type=url],
 textarea, select {
     width: 100%;
     padding: .6rem .7rem;
@@ -316,6 +491,12 @@ input:focus, textarea:focus, select:focus {
     outline: 2px solid var(--azul);
     outline-offset: 0;
     border-color: var(--azul);
+}
+.ajuda-campo {
+    display: block;
+    font-size: .82rem;
+    color: var(--cinza);
+    margin-top: .3rem;
 }
 .erros {
     color: var(--erro);
@@ -447,6 +628,9 @@ input:focus, textarea:focus, select:focus {
     .item-data { min-width: 3.4rem; padding-right: .7rem; }
     .item-dia { font-size: 1.1rem; }
     .busca { flex-direction: column; }
+    .cal-dia { min-height: 3.4rem; padding: .2rem .25rem; }
+    .cal-aula { font-size: .55rem; padding: .05rem .2rem; }
+    .horario-link { margin-left: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -90,6 +90,104 @@ class Professor(Aluno):
         super().save(*args, **kwargs)
 
 
+class HorarioAula(models.Model):
+    """Horário semanal fixo de aula de um nível, com o link do Meet."""
+
+    DIAS_SEMANA = [
+        (0, 'segunda-feira'),
+        (1, 'terça-feira'),
+        (2, 'quarta-feira'),
+        (3, 'quinta-feira'),
+        (4, 'sexta-feira'),
+        (5, 'sábado'),
+        (6, 'domingo'),
+    ]
+
+    nivel = models.ForeignKey(
+        Nivel, verbose_name='nível', on_delete=models.CASCADE, related_name='horarios'
+    )
+    dia_semana = models.PositiveSmallIntegerField('dia da semana', choices=DIAS_SEMANA)
+    hora_inicio = models.TimeField('início')
+    hora_fim = models.TimeField('fim')
+    rotulo = models.CharField(
+        'rótulo', max_length=100, blank=True,
+        help_text='Ex.: Nível 1 avançado. Aparece no calendário e na lista de links.',
+    )
+    link_meet = models.URLField('link do Meet', blank=True)
+
+    class Meta:
+        verbose_name = 'horário de aula'
+        verbose_name_plural = 'horários de aula'
+        ordering = ['nivel__numero', 'dia_semana', 'hora_inicio']
+
+    def __str__(self):
+        return f'{self.nivel.nome} — {self.get_dia_semana_display()} {self.hora_inicio:%H:%M}'
+
+
+class AulaCancelada(models.Model):
+    """Cancela uma ocorrência específica da grade semanal (ex.: só o sábado 20/06).
+    A aula aparece riscada no calendário dos alunos do nível."""
+
+    horario = models.ForeignKey(
+        HorarioAula, verbose_name='horário', on_delete=models.CASCADE,
+        related_name='cancelamentos',
+    )
+    data = models.DateField('data')
+    motivo = models.CharField(
+        'motivo', max_length=200, blank=True,
+        help_text='Opcional. Aparece para os alunos ao passar o mouse sobre a aula cancelada.',
+    )
+
+    class Meta:
+        verbose_name = 'aula cancelada'
+        verbose_name_plural = 'aulas canceladas'
+        ordering = ['data']
+        constraints = [
+            models.UniqueConstraint(fields=['horario', 'data'], name='cancelamento_unico'),
+        ]
+
+    def __str__(self):
+        return f'{self.horario} cancelada em {self.data:%d/%m/%Y}'
+
+
+class AulaExtra(models.Model):
+    """Aula em data específica, fora da grade semanal (ex.: intensivo de férias).
+    Aparece no calendário mesmo durante um recesso."""
+
+    nivel = models.ForeignKey(
+        Nivel, verbose_name='nível', on_delete=models.CASCADE, related_name='aulas_extras'
+    )
+    data = models.DateField('data')
+    hora_inicio = models.TimeField('início')
+    hora_fim = models.TimeField('fim')
+    rotulo = models.CharField('rótulo', max_length=100, blank=True)
+    link_meet = models.URLField('link do Meet', blank=True)
+
+    class Meta:
+        verbose_name = 'aula avulsa'
+        verbose_name_plural = 'aulas avulsas'
+        ordering = ['data', 'hora_inicio']
+
+    def __str__(self):
+        return f'{self.nivel.nome} — {self.data:%d/%m/%Y} {self.hora_inicio:%H:%M}'
+
+
+class Recesso(models.Model):
+    """Período sem aulas (férias, feriados). O calendário fica vazio nesses dias."""
+
+    descricao = models.CharField('descrição', max_length=100)
+    inicio = models.DateField('início')
+    fim = models.DateField('fim')
+
+    class Meta:
+        verbose_name = 'recesso'
+        verbose_name_plural = 'recessos'
+        ordering = ['inicio']
+
+    def __str__(self):
+        return f'{self.descricao} ({self.inicio:%d/%m/%Y} a {self.fim:%d/%m/%Y})'
+
+
 class Aula(models.Model):
     titulo = models.CharField('título', max_length=200)
     data = models.DateField('data da aula')

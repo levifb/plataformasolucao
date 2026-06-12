@@ -1,7 +1,10 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from .models import Aluno, Aula, ComentarioAula, Material, Nivel, Professor
+from .models import (
+    Aluno, Aula, AulaCancelada, AulaExtra, ComentarioAula, HorarioAula,
+    Material, Nivel, Professor, Recesso,
+)
 
 admin.site.site_header = 'Curso Solução — Administração'
 admin.site.site_title = 'Curso Solução'
@@ -103,3 +106,32 @@ class MaterialAdmin(admin.ModelAdmin):
 @admin.register(Nivel)
 class NivelAdmin(admin.ModelAdmin):
     list_display = ('nome', 'descricao')
+
+
+@admin.register(HorarioAula)
+class HorarioAulaAdmin(admin.ModelAdmin):
+    list_display = ('nivel', 'dia_semana', 'hora_inicio', 'hora_fim', 'rotulo', 'tem_link')
+    list_filter = ('nivel', 'dia_semana')
+
+    @admin.display(description='link do Meet', boolean=True)
+    def tem_link(self, obj):
+        return bool(obj.link_meet)
+
+
+@admin.register(AulaExtra)
+class AulaExtraAdmin(admin.ModelAdmin):
+    list_display = ('nivel', 'data', 'hora_inicio', 'hora_fim', 'rotulo')
+    list_filter = ('nivel',)
+    date_hierarchy = 'data'
+
+
+@admin.register(AulaCancelada)
+class AulaCanceladaAdmin(admin.ModelAdmin):
+    list_display = ('horario', 'data', 'motivo')
+    list_filter = ('horario__nivel',)
+    date_hierarchy = 'data'
+
+
+@admin.register(Recesso)
+class RecessoAdmin(admin.ModelAdmin):
+    list_display = ('descricao', 'inicio', 'fim')

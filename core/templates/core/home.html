@@ -1,8 +1,13 @@
 {% extends 'base.html' %}
 
 {% block conteudo %}
-<h1>Olá, {{ user.first_name|default:user.email }}<span class="qed" aria-hidden="true"></span></h1>
+<h1>Olá, {% if user.is_staff %}Professor(a) {% endif %}{{ user.first_name|default:user.email }}!<span class="qed" aria-hidden="true"></span></h1>
 <p class="sub">Suas aulas, gravações e listas para treinar.</p>
+
+<nav class="subabas">
+    <a href="{% url 'home' %}" class="ativo">Aulas</a>
+    <a href="{% url 'calendario' %}">Calendário</a>
+</nav>
 
 {% if user.is_staff %}
 <p class="acao-admin"><a class="botao botao-borda" href="{% url 'admin:core_aula_add' %}">+ Nova aula</a></p>

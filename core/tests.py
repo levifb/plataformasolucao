@@ -5,7 +5,11 @@ from django.core import mail
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import Aluno, Aula, ComentarioAula, Material, Nivel, Professor
+from .models import (
+    Aluno, Aula, AulaCancelada, AulaExtra, ComentarioAula, HorarioAula,
+    Material, Nivel, Professor, Recesso,
+)
+from .views import montar_mes
 
 
 class PlataformaTests(TestCase):
@@ -118,31 +122,15 @@ class PlataformaTests(TestCase):
         self.assertRedirects(resp, reverse('password_reset_done'))
         self.assertEqual(len(mail.outbox), 0)
 
-    def test_nova_aula_avisa_alunos_do_nivel(self):
+    def test_nova_aula_nao_dispara_email(self):
         mail.outbox.clear()
-        aula = Aula.objects.create(titulo='Grafos', data=date(2026, 6, 15), nivel=self.n1)
-        self.assertEqual(len(mail.outbox), 1)
-        aviso = mail.outbox[0]
-        self.assertEqual(aviso.subject, 'Nova aula: Grafos')
-        self.assertEqual(aviso.bcc, ['aluno@teste.com'])
-        self.assertIn(reverse('aula_detalhe', args=[aula.pk]), aviso.body)
-        # Editar a aula não dispara novo aviso.
-        aula.titulo = 'Grafos e árvores'
-        aula.save()
-        self.assertEqual(len(mail.outbox), 1)
-
-    def test_nova_aula_sem_alunos_no_nivel_nao_envia_email(self):
-        mail.outbox.clear()
-        Aula.objects.create(titulo='Funções', data=date(2026, 6, 16), nivel=self.n2)
+        Aula.objects.create(titulo='Grafos', data=date(2026, 6, 15), nivel=self.n1)
         self.assertEqual(len(mail.outbox), 0)
 
-    def test_novo_material_avisa_alunos_do_nivel(self):
+    def test_novo_material_nao_dispara_email(self):
         mail.outbox.clear()
         Material.objects.create(titulo='Lista 5', nivel=self.n1, arquivo='materiais_avulsos/l5.pdf')
-        self.assertEqual(len(mail.outbox), 1)
-        aviso = mail.outbox[0]
-        self.assertEqual(aviso.subject, 'Novo material: Lista 5')
-        self.assertEqual(aviso.bcc, ['aluno@teste.com'])
+        self.assertEqual(len(mail.outbox), 0)
 
     def test_material_resolvido_na_pagina_da_aula(self):
         self.aula_n1.material = 'materiais/lista-resolvida.pdf'
@@ -261,6 +249,58 @@ class ComentarioAulaTests(TestCase):
         self.assertContains(resp, 'Professor')
 
 
+class BoasVindasTests(TestCase):
+    def test_aluno_novo_recebe_boas_vindas(self):
+        mail.outbox.clear()
+        Aluno.objects.create_user(
+            email='novo@teste.com', password='senha123', first_name='Ana'
+        )
+        self.assertEqual(len(mail.outbox), 1)
+        aviso = mail.outbox[0]
+        self.assertEqual(aviso.to, ['novo@teste.com'])
+        self.assertEqual(aviso.subject, 'Bem-vindo(a) ao Curso Solução!')
+        self.assertIn('Olá, Ana!', aviso.body)
+        self.assertIn('/senha/redefinir/', aviso.body)
+        self.assertIn('/senha/esqueci/', aviso.body)
+
+    def test_link_de_boas_vindas_cria_senha(self):
+        mail.outbox.clear()
+        Aluno.objects.create_user(
+            email='novo@teste.com', password='senha-inicial', first_name='Ana'
+        )
+        link = re.search(r'(/senha/redefinir/\S+)', mail.outbox[0].body)
+        self.assertIsNotNone(link)
+        resp = self.client.get(link.group(1), follow=True)
+        self.assertContains(resp, 'Criar nova senha')
+        resp = self.client.post(resp.request['PATH_INFO'], {
+            'new_password1': 'MinhaSenha#2026',
+            'new_password2': 'MinhaSenha#2026',
+        })
+        self.assertRedirects(resp, reverse('password_reset_complete'))
+        self.assertTrue(self.client.login(username='novo@teste.com', password='MinhaSenha#2026'))
+
+    def test_professor_nao_recebe_boas_vindas(self):
+        mail.outbox.clear()
+        Professor.objects.create_user(
+            email='prof@teste.com', password='senha123', first_name='Levi'
+        )
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_superuser_nao_recebe_boas_vindas(self):
+        mail.outbox.clear()
+        Aluno.objects.create_superuser('admin@teste.com', 'senha123', first_name='Admin')
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_editar_aluno_nao_reenvia_boas_vindas(self):
+        aluno = Aluno.objects.create_user(
+            email='novo@teste.com', password='senha123', first_name='Ana'
+        )
+        mail.outbox.clear()
+        aluno.first_name = 'Ana Clara'
+        aluno.save()
+        self.assertEqual(len(mail.outbox), 0)
+
+
 class ProfessorTests(TestCase):
     def setUp(self):
         self.n1 = Nivel.objects.get(numero=1)
@@ -278,6 +318,16 @@ class ProfessorTests(TestCase):
     def test_professores_e_alunos_separados(self):
         self.assertEqual(list(Professor.objects.all()), [self.professor])
         self.assertIn(self.aluno, Aluno.objects.filter(is_staff=False))
+
+    def test_saudacao_do_professor_na_home(self):
+        self.client.login(username='prof@teste.com', password='senha123')
+        resp = self.client.get(reverse('home'))
+        self.assertContains(resp, 'Olá, Professor(a) Levi')
+
+        self.client.login(username='aluno@teste.com', password='senha123')
+        resp = self.client.get(reverse('home'))
+        self.assertContains(resp, 'Olá, Ana')
+        self.assertNotContains(resp, 'Professor(a)')
 
     def test_professor_acessa_gerenciamento(self):
         self.client.login(username='prof@teste.com', password='senha123')
@@ -302,3 +352,254 @@ class ProfessorTests(TestCase):
         self.client.login(username='aluno@teste.com', password='senha123')
         resp = self.client.get(reverse('admin:index'))
         self.assertEqual(resp.status_code, 302)
+
+
+class CalendarioTests(TestCase):
+    def setUp(self):
+        self.n1 = Nivel.objects.get(numero=1)
+        self.aluno = Aluno.objects.create_user(
+            email='aluno@teste.com', password='senha123', first_name='Ana'
+        )
+        self.aluno.niveis.add(self.n1)
+        self.client.login(username='aluno@teste.com', password='senha123')
+
+    def test_horarios_criados_pela_migracao(self):
+        self.assertEqual(HorarioAula.objects.count(), 5)
+        self.assertEqual(
+            HorarioAula.objects.filter(rotulo='Nível 2 avançado').get().nivel.numero, 2
+        )
+        recesso = Recesso.objects.get()
+        self.assertEqual(recesso.inicio, date(2026, 7, 1))
+        self.assertEqual(recesso.fim, date(2026, 7, 31))
+
+    def test_pagina_mostra_links_de_todos_os_niveis(self):
+        resp = self.client.get(reverse('calendario'))
+        self.assertContains(resp, 'https://meet.google.com/zjb-fenc-jeo')
+        self.assertContains(resp, 'https://meet.google.com/qsi-ytck-dqy')
+        self.assertContains(resp, 'https://meet.google.com/yhs-qngv-ixx')
+        self.assertContains(resp, 'Nível 1 avançado')
+
+    def test_calendario_exige_login(self):
+        self.client.logout()
+        resp = self.client.get(reverse('calendario'))
+        self.assertEqual(resp.status_code, 302)
+
+    def _dias_com_aula(self, mes):
+        return sorted(
+            dia['data'].day
+            for semana in mes['semanas'] for dia in semana
+            if dia['aulas'] and not dia['outro_mes']
+        )
+
+    def test_montar_mes_marca_proximas_aulas(self):
+        horarios = list(HorarioAula.objects.filter(nivel=self.n1))
+        hoje = date(2026, 6, 12)
+        mes = montar_mes(2026, 6, horarios, [], [], [], hoje)
+        self.assertEqual(mes['nome'], 'Junho de 2026')
+        # Sábados 13, 20, 27 e segundas 15, 22, 29 — nada antes de hoje (dia 12).
+        self.assertEqual(self._dias_com_aula(mes), [13, 15, 20, 22, 27, 29])
+
+    def test_montar_mes_recesso_suspende_grade_semanal(self):
+        horarios = list(HorarioAula.objects.filter(nivel=self.n1))
+        recessos = list(Recesso.objects.all())
+        mes = montar_mes(2026, 7, horarios, [], [], recessos, date(2026, 6, 12))
+        self.assertEqual(self._dias_com_aula(mes), [])
+        self.assertEqual(len(mes['recessos']), 1)
+
+    def test_intensivo_de_julho_aparece_mesmo_no_recesso(self):
+        horarios = list(HorarioAula.objects.filter(nivel=self.n1))
+        extras = list(AulaExtra.objects.filter(nivel=self.n1))
+        recessos = list(Recesso.objects.all())
+        mes = montar_mes(2026, 7, horarios, extras, [], recessos, date(2026, 6, 12))
+        self.assertEqual(self._dias_com_aula(mes), [1, 2, 3, 6, 7, 8, 9, 10])
+
+    def test_intensivo_nivel_3_termina_dia_7(self):
+        n3 = Nivel.objects.get(numero=3)
+        extras = list(AulaExtra.objects.filter(nivel=n3))
+        mes = montar_mes(2026, 7, [], extras, [], list(Recesso.objects.all()), date(2026, 6, 12))
+        self.assertEqual(self._dias_com_aula(mes), [1, 2, 3, 6, 7])
+
+    def test_intensivo_criado_pela_migracao(self):
+        self.assertEqual(AulaExtra.objects.count(), 21)
+        aula = AulaExtra.objects.filter(nivel=self.n1).first()
+        self.assertEqual(aula.hora_inicio.strftime('%H:%M'), '09:20')
+        self.assertEqual(aula.link_meet, 'https://meet.google.com/zjb-fenc-jeo')
+
+
+class NovaAulaCalendarioTests(TestCase):
+    def setUp(self):
+        self.n2 = Nivel.objects.get(numero=2)
+        self.aluno = Aluno.objects.create_user(
+            email='aluno@teste.com', password='senha123', first_name='Ana'
+        )
+        self.professor = Professor.objects.create_user(
+            email='prof@teste.com', password='senha123', first_name='Levi'
+        )
+
+    def _dados(self, **extra):
+        dados = {
+            'nivel': self.n2.pk,
+            'data': '2026-08-15',
+            'hora_inicio': '14:00',
+            'hora_fim': '15:40',
+            'link_meet': '',
+        }
+        dados.update(extra)
+        return dados
+
+    def test_professor_cadastra_aula(self):
+        self.client.login(username='prof@teste.com', password='senha123')
+        resp = self.client.post(reverse('nova_aula_calendario'), self._dados())
+        self.assertRedirects(resp, reverse('calendario'))
+        aula = AulaExtra.objects.get(data=date(2026, 8, 15))
+        self.assertEqual(aula.nivel, self.n2)
+        self.assertEqual(aula.hora_inicio.strftime('%H:%M'), '14:00')
+
+    def test_link_vazio_herda_link_do_nivel(self):
+        self.client.login(username='prof@teste.com', password='senha123')
+        self.client.post(reverse('nova_aula_calendario'), self._dados())
+        aula = AulaExtra.objects.get(data=date(2026, 8, 15))
+        self.assertEqual(aula.link_meet, 'https://meet.google.com/qsi-ytck-dqy')
+
+    def test_link_informado_e_mantido(self):
+        self.client.login(username='prof@teste.com', password='senha123')
+        self.client.post(
+            reverse('nova_aula_calendario'),
+            self._dados(link_meet='https://meet.google.com/aaa-bbbb-ccc'),
+        )
+        aula = AulaExtra.objects.get(data=date(2026, 8, 15))
+        self.assertEqual(aula.link_meet, 'https://meet.google.com/aaa-bbbb-ccc')
+
+    def test_fim_antes_do_inicio_da_erro(self):
+        self.client.login(username='prof@teste.com', password='senha123')
+        resp = self.client.post(
+            reverse('nova_aula_calendario'),
+            self._dados(hora_inicio='15:00', hora_fim='14:00'),
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'O horário de fim deve ser depois do horário de início.')
+        self.assertFalse(AulaExtra.objects.filter(data=date(2026, 8, 15)).exists())
+
+    def test_aluno_nao_cadastra_aula(self):
+        self.client.login(username='aluno@teste.com', password='senha123')
+        resp = self.client.post(reverse('nova_aula_calendario'), self._dados())
+        self.assertRedirects(resp, reverse('calendario'))
+        self.assertFalse(AulaExtra.objects.filter(data=date(2026, 8, 15)).exists())
+
+    def test_botao_so_aparece_para_professor(self):
+        self.client.login(username='prof@teste.com', password='senha123')
+        resp = self.client.get(reverse('calendario'))
+        self.assertContains(resp, 'Nova aula no calendário')
+
+        self.client.login(username='aluno@teste.com', password='senha123')
+        resp = self.client.get(reverse('calendario'))
+        self.assertNotContains(resp, 'Nova aula no calendário')
+
+
+
+class CancelarAulaTests(TestCase):
+    def setUp(self):
+        self.n1 = Nivel.objects.get(numero=1)
+        self.aluno = Aluno.objects.create_user(
+            email='aluno@teste.com', password='senha123', first_name='Ana'
+        )
+        self.aluno.niveis.add(self.n1)
+        self.professor = Professor.objects.create_user(
+            email='prof@teste.com', password='senha123', first_name='Levi'
+        )
+        # Sábado 08:00–09:40 do nível 1.
+        self.horario_sabado = HorarioAula.objects.get(nivel=self.n1, dia_semana=5)
+
+    def test_professor_cancela_ocorrencia(self):
+        self.client.login(username='prof@teste.com', password='senha123')
+        resp = self.client.post(reverse('cancelar_aula_calendario'), {
+            'horario': self.horario_sabado.pk,
+            'data': '2026-06-20',  # um sábado
+            'motivo': '',
+        })
+        self.assertRedirects(resp, reverse('calendario'))
+        cancelamento = AulaCancelada.objects.get(
+            horario=self.horario_sabado, data=date(2026, 6, 20)
+        )
+        self.assertEqual(cancelamento.motivo, '')
+
+    def test_cancelamento_com_motivo(self):
+        self.client.login(username='prof@teste.com', password='senha123')
+        self.client.post(reverse('cancelar_aula_calendario'), {
+            'horario': self.horario_sabado.pk,
+            'data': '2026-06-20',
+            'motivo': 'Feriado de Corpus Christi',
+        })
+        cancelamento = AulaCancelada.objects.get(data=date(2026, 6, 20))
+        self.assertEqual(cancelamento.motivo, 'Feriado de Corpus Christi')
+
+    def test_motivo_disponivel_no_calendario(self):
+        cancelamento = AulaCancelada.objects.create(
+            horario=self.horario_sabado, data=date(2026, 6, 20), motivo='Feriado'
+        )
+        horarios = list(HorarioAula.objects.filter(nivel=self.n1))
+        mes = montar_mes(2026, 6, horarios, [], [cancelamento], [], date(2026, 6, 12))
+        cancelados = [
+            c for semana in mes['semanas'] for dia in semana for c in dia['canceladas']
+        ]
+        self.assertEqual(len(cancelados), 1)
+        self.assertEqual(cancelados[0].motivo, 'Feriado')
+        self.assertEqual(cancelados[0].horario, self.horario_sabado)
+
+    def test_data_em_dia_errado_da_erro(self):
+        self.client.login(username='prof@teste.com', password='senha123')
+        resp = self.client.post(reverse('cancelar_aula_calendario'), {
+            'horario': self.horario_sabado.pk,
+            'data': '2026-06-19',  # uma sexta
+        })
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'A data não corresponde ao dia dessa aula')
+        self.assertFalse(AulaCancelada.objects.exists())
+
+    def test_aluno_nao_cancela(self):
+        self.client.login(username='aluno@teste.com', password='senha123')
+        resp = self.client.post(reverse('cancelar_aula_calendario'), {
+            'horario': self.horario_sabado.pk,
+            'data': '2026-06-20',
+        })
+        self.assertRedirects(resp, reverse('calendario'))
+        self.assertFalse(AulaCancelada.objects.exists())
+
+    def test_ocorrencia_cancelada_sai_das_aulas_e_aparece_riscada(self):
+        cancelamento = AulaCancelada.objects.create(
+            horario=self.horario_sabado, data=date(2026, 6, 20)
+        )
+        horarios = list(HorarioAula.objects.filter(nivel=self.n1))
+        mes = montar_mes(2026, 6, horarios, [], [cancelamento], [], date(2026, 6, 12))
+        dias_com_aula = sorted(
+            dia['data'].day
+            for semana in mes['semanas'] for dia in semana
+            if dia['aulas'] and not dia['outro_mes']
+        )
+        # Sábado 20 sai da lista de aulas...
+        self.assertEqual(dias_com_aula, [13, 15, 22, 27, 29])
+        # ...mas aparece como cancelada naquele dia.
+        dias_cancelados = [
+            dia['data'].day
+            for semana in mes['semanas'] for dia in semana
+            if dia['canceladas']
+        ]
+        self.assertEqual(dias_cancelados, [20])
+
+    def test_professor_desfaz_cancelamento(self):
+        cancelamento = AulaCancelada.objects.create(
+            horario=self.horario_sabado, data=date(2026, 6, 20)
+        )
+        self.client.login(username='prof@teste.com', password='senha123')
+        resp = self.client.post(reverse('desfazer_cancelamento', args=[cancelamento.pk]))
+        self.assertRedirects(resp, reverse('calendario'))
+        self.assertFalse(AulaCancelada.objects.exists())
+
+    def test_aluno_nao_desfaz_cancelamento(self):
+        cancelamento = AulaCancelada.objects.create(
+            horario=self.horario_sabado, data=date(2026, 6, 20)
+        )
+        self.client.login(username='aluno@teste.com', password='senha123')
+        resp = self.client.post(reverse('desfazer_cancelamento', args=[cancelamento.pk]))
+        self.assertEqual(resp.status_code, 403)
+        self.assertTrue(AulaCancelada.objects.exists())

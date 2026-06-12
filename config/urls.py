@@ -11,6 +11,10 @@ urlpatterns = [
     path('admin/', admin.site.urls),
 
     path('', core_views.home, name='home'),
+    path('calendario/', core_views.calendario, name='calendario'),
+    path('calendario/nova-aula/', core_views.nova_aula_calendario, name='nova_aula_calendario'),
+    path('calendario/cancelar-aula/', core_views.cancelar_aula_calendario, name='cancelar_aula_calendario'),
+    path('calendario/cancelamento/<int:pk>/desfazer/', core_views.desfazer_cancelamento, name='desfazer_cancelamento'),
     path('aula/<int:pk>/', core_views.aula_detalhe, name='aula_detalhe'),
     path('aula/comentario/<int:pk>/editar/', core_views.editar_comentario_aula, name='editar_comentario_aula'),
     path('aula/comentario/<int:pk>/excluir/', core_views.excluir_comentario_aula, name='excluir_comentario_aula'),
