@@ -12,7 +12,9 @@
         <p class="login-marca">Plataforma do aluno</p>
         <h1>Bem-vindo(a)<span class="qed" aria-hidden="true"></span></h1>
 
-        {% if form.errors %}
+        {% if bloqueado %}
+        <p class="erros">Muitas tentativas de login. Aguarde alguns minutos e tente novamente, ou use "Esqueci minha senha".</p>
+        {% elif form.errors %}
         <p class="erros">Email ou senha incorretos. Tente novamente.</p>
         {% endif %}
 

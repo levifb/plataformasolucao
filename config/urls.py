@@ -6,6 +6,7 @@ from django.urls import path
 
 from comunidade import views as comunidade_views
 from core import views as core_views
+from core.auth import LoginComLimite
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -20,7 +21,7 @@ urlpatterns = [
     path('aula/comentario/<int:pk>/excluir/', core_views.excluir_comentario_aula, name='excluir_comentario_aula'),
     path('materiais/', core_views.materiais, name='materiais'),
 
-    path('entrar/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
+    path('entrar/', LoginComLimite.as_view(template_name='registration/login.html'), name='login'),
     path('sair/', auth_views.LogoutView.as_view(), name='logout'),
 
     # Recuperação de senha. Os templates usam o prefixo "senha_" para não

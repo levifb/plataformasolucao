@@ -1,6 +1,11 @@
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.core.validators import FileExtensionValidator
 from django.db import models
+
+# Só PDFs nos campos de arquivo: evita que um arquivo executável (ex.: .html
+# com JavaScript) seja enviado e servido a partir do domínio do site.
+validar_pdf = FileExtensionValidator(allowed_extensions=['pdf'])
 
 
 class Nivel(models.Model):
@@ -199,6 +204,7 @@ class Aula(models.Model):
         upload_to='materiais/',
         blank=True,
         null=True,
+        validators=[validar_pdf],
         help_text='Versão resolvida do material, publicada após a aula. '
                   'O material puro fica na aba Materiais.',
     )
@@ -253,7 +259,9 @@ class Material(models.Model):
         Nivel, verbose_name='nível', on_delete=models.PROTECT, related_name='materiais'
     )
     descricao = models.TextField('descrição', blank=True)
-    arquivo = models.FileField('arquivo (PDF)', upload_to='materiais_avulsos/')
+    arquivo = models.FileField(
+        'arquivo (PDF)', upload_to='materiais_avulsos/', validators=[validar_pdf]
+    )
     criado_em = models.DateTimeField('postado em', auto_now_add=True)
 
     class Meta:

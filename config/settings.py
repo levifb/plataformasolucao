@@ -164,10 +164,31 @@ DEFAULT_FROM_EMAIL = os.environ.get(
 # Endereço público da plataforma, usado nos links dos emails de aviso.
 SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000')
 
+# Sessão: expira em 2 semanas e é renovada a cada acesso; alunos em
+# computador compartilhado não ficam logados indefinidamente.
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 14
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_COOKIE_HTTPONLY = True  # JS não lê o cookie de sessão (anti-roubo via XSS)
+
 # Endurecimento aplicado apenas em produção (DEBUG=False).
 if not DEBUG:
     CSRF_TRUSTED_ORIGINS = [SITE_URL]
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+
+    # Atrás do proxy do PythonAnywhere, o Django enxerga a conexão como HTTP;
+    # este cabeçalho diz a ele que a requisição original era HTTPS.
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    # Toda requisição HTTP é redirecionada para HTTPS.
+    SECURE_SSL_REDIRECT = True
+
+    # HSTS: depois da primeira visita, o navegador passa a recusar HTTP
+    # neste domínio por 1 ano. Reversível reduzindo o tempo e aguardando expirar.
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = False
+
+    # Não vaza o caminho navegado para sites externos ao clicar em links.
+    SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

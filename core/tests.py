@@ -2,9 +2,13 @@ import re
 from datetime import date
 
 from django.core import mail
+from django.core.cache import cache
+from django.core.exceptions import ValidationError
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 
+from .auth import MAX_TENTATIVAS
 from .models import (
     Aluno, Aula, AulaCancelada, AulaExtra, ComentarioAula, HorarioAula,
     Material, Nivel, Professor, Recesso,
@@ -603,3 +607,57 @@ class CancelarAulaTests(TestCase):
         resp = self.client.post(reverse('desfazer_cancelamento', args=[cancelamento.pk]))
         self.assertEqual(resp.status_code, 403)
         self.assertTrue(AulaCancelada.objects.exists())
+
+
+class SegurancaTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.n1 = Nivel.objects.get(numero=1)
+        Aluno.objects.create_user(
+            email='aluno@teste.com', password='SenhaCerta#2026', first_name='Ana'
+        )
+
+    def test_upload_nao_pdf_e_rejeitado(self):
+        material = Material(titulo='Falso', nivel=self.n1)
+        material.arquivo = SimpleUploadedFile(
+            'malicioso.html', b'<script>alert(1)</script>', content_type='text/html'
+        )
+        with self.assertRaises(ValidationError):
+            material.full_clean()
+
+    def test_upload_pdf_e_aceito(self):
+        material = Material(titulo='Lista', nivel=self.n1)
+        material.arquivo = SimpleUploadedFile(
+            'lista.pdf', b'%PDF-1.4 conteudo', content_type='application/pdf'
+        )
+        try:
+            material.full_clean()
+        except ValidationError as e:
+            self.assertNotIn('arquivo', e.message_dict)
+
+    def test_login_bloqueia_apos_excesso_de_tentativas(self):
+        url = reverse('login')
+        for _ in range(MAX_TENTATIVAS):
+            self.client.post(url, {'username': 'aluno@teste.com', 'password': 'errada'})
+        resp = self.client.post(
+            url, {'username': 'aluno@teste.com', 'password': 'SenhaCerta#2026'}
+        )
+        self.assertContains(resp, 'Muitas tentativas')
+        self.assertNotIn('_auth_user_id', self.client.session)
+
+    def test_login_correto_zera_contador(self):
+        url = reverse('login')
+        for _ in range(MAX_TENTATIVAS - 1):
+            self.client.post(url, {'username': 'aluno@teste.com', 'password': 'errada'})
+        resp = self.client.post(
+            url, {'username': 'aluno@teste.com', 'password': 'SenhaCerta#2026'}
+        )
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn('_auth_user_id', self.client.session)
+
+    def test_paginas_protegidas_exigem_login(self):
+        cache.clear()
+        for nome in ['home', 'calendario', 'materiais', 'comunidade']:
+            resp = self.client.get(reverse(nome))
+            self.assertEqual(resp.status_code, 302, nome)
+            self.assertIn('/entrar/', resp.url, nome)
