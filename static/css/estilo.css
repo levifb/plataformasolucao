@@ -396,8 +396,10 @@ a.cartao:hover {
     overflow: hidden;
     text-overflow: ellipsis;
 }
-.cal-aula[data-info]:hover { overflow: visible; }
-.cal-aula[data-info]:hover::after {
+/* o tooltip abre no hover (mouse) e também no toque/foco (celular e teclado) */
+.cal-aula[data-info]:hover, .cal-aula[data-info]:focus { overflow: visible; }
+.cal-aula[data-info]:focus { outline: none; }
+.cal-aula[data-info]:hover::after, .cal-aula[data-info]:focus::after {
     content: attr(data-info);
     position: absolute;
     left: 50%;

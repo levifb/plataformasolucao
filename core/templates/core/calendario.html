@@ -35,10 +35,10 @@
         <div class="cal-dia{% if dia.outro_mes %} cal-outro-mes{% endif %}{% if dia.passado %} cal-passado{% endif %}">
             <span class="cal-numero{% if dia.hoje %} cal-hoje{% endif %}">{{ dia.data.day }}</span>
             {% for aula in dia.aulas %}
-            <span class="cal-aula" data-info="{{ aula.rotulo|default:aula.nivel.nome }} — {{ aula.hora_inicio|time:'H:i' }} às {{ aula.hora_fim|time:'H:i' }}">{{ aula.hora_inicio|time:"H:i" }} N{{ aula.nivel.numero }}</span>
+            <span class="cal-aula" tabindex="0" data-info="{{ aula.rotulo|default:aula.nivel.nome }} — {{ aula.hora_inicio|time:'H:i' }} às {{ aula.hora_fim|time:'H:i' }}">{{ aula.hora_inicio|time:"H:i" }} N{{ aula.nivel.numero }}</span>
             {% endfor %}
             {% for cancelamento in dia.canceladas %}
-            <span class="cal-aula cal-cancelada" data-info="Aula cancelada{% if cancelamento.motivo %}: {{ cancelamento.motivo }}{% endif %} — {{ cancelamento.horario.rotulo|default:cancelamento.horario.nivel.nome }}, {{ cancelamento.horario.hora_inicio|time:'H:i' }} às {{ cancelamento.horario.hora_fim|time:'H:i' }}">{{ cancelamento.horario.hora_inicio|time:"H:i" }} N{{ cancelamento.horario.nivel.numero }}</span>
+            <span class="cal-aula cal-cancelada" tabindex="0" data-info="Aula cancelada{% if cancelamento.motivo %}: {{ cancelamento.motivo }}{% endif %} — {{ cancelamento.horario.rotulo|default:cancelamento.horario.nivel.nome }}, {{ cancelamento.horario.hora_inicio|time:'H:i' }} às {{ cancelamento.horario.hora_fim|time:'H:i' }}">{{ cancelamento.horario.hora_inicio|time:"H:i" }} N{{ cancelamento.horario.nivel.numero }}</span>
             {% endfor %}
         </div>
         {% endfor %}
