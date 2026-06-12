@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block titulo %}{{ aula.titulo }} — Curso Solução{% endblock %}
+
+{% block conteudo %}
+<p><a href="{% url 'home' %}">&larr; Voltar para as aulas</a></p>
+
+<h1>{{ aula.titulo }}</h1>
+<div class="cartao-meta" style="margin-bottom: 1.2rem;">
+    <span class="selo selo-azul">{{ aula.nivel.nome }}</span>
+    <span>{{ aula.data|date:"d/m/Y" }}</span>
+</div>
+
+{% if aula.youtube_id %}
+<h2>Gravação da aula</h2>
+<div class="video">
+    <iframe src="https://www.youtube.com/embed/{{ aula.youtube_id }}"
+            title="Gravação: {{ aula.titulo }}"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen></iframe>
+</div>
+{% endif %}
+
+<h2>Arquivos</h2>
+<div class="cartao">
+    {% if aula.material %}
+    <p style="margin-bottom:.6rem;"><a class="botao botao-azul" href="{{ aula.material.url }}" target="_blank">📄 Baixar material</a></p>
+    {% endif %}
+    {% if aula.resolucao %}
+    <p><a class="botao" href="{{ aula.resolucao.url }}" target="_blank">✅ Baixar resolução</a></p>
+    {% endif %}
+    {% if not aula.material and not aula.resolucao %}
+    <p class="aviso-vazio">Os arquivos desta aula ainda não foram publicados.</p>
+    {% endif %}
+</div>
+{% endblock %}

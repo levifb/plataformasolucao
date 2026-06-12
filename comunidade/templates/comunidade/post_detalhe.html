@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block titulo %}{{ post.titulo }} — Curso Solução{% endblock %}
+
+{% block conteudo %}
+<p><a href="{% url 'comunidade' %}">&larr; Voltar para a comunidade</a></p>
+
+<div class="cartao">
+    <div class="cartao-titulo">{{ post.titulo }}</div>
+    <div class="cartao-meta">
+        <span class="selo selo-azul">{{ post.nivel.nome }}</span>
+        <span>{{ post.autor.first_name|default:post.autor.email }}</span>
+        <span>{{ post.criado_em|date:"d/m/Y H:i" }}</span>
+    </div>
+    <div class="cartao-texto">{{ post.texto }}</div>
+</div>
+
+<h2>Comentários ({{ comentarios|length }})</h2>
+
+{% for comentario in comentarios %}
+<div class="cartao comentario">
+    <div class="cartao-meta">
+        <strong>{{ comentario.autor.first_name|default:comentario.autor.email }}</strong>
+        <span>{{ comentario.criado_em|date:"d/m/Y H:i" }}</span>
+    </div>
+    <div class="cartao-texto">{{ comentario.texto }}</div>
+</div>
+{% empty %}
+<p class="aviso-vazio">Nenhum comentário ainda.</p>
+{% endfor %}
+
+<h2>Comentar</h2>
+<div class="cartao">
+    <form method="post">
+        {% csrf_token %}
+        <p><textarea name="texto" rows="4" placeholder="Escreva seu comentário..." required></textarea></p>
+        <button type="submit" class="botao">Enviar comentário</button>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block conteudo %}
+<h1>Olá, {{ user.first_name|default:user.email }}!</h1>
+
+{% if niveis|length > 1 %}
+<div class="filtros">
+    <a href="{% url 'home' %}" {% if not nivel_filtro %}class="ativo"{% endif %}>Todos</a>
+    {% for nivel in niveis %}
+    <a href="?nivel={{ nivel.numero }}" {% if nivel_filtro == nivel.numero %}class="ativo"{% endif %}>{{ nivel.nome }}</a>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% for aula in aulas %}
+<a class="cartao" href="{% url 'aula_detalhe' aula.pk %}">
+    <div class="cartao-titulo">{{ aula.titulo }}</div>
+    <div class="cartao-meta">
+        <span class="selo selo-azul">{{ aula.nivel.nome }}</span>
+        <span>{{ aula.data|date:"d/m/Y" }}</span>
+        {% if aula.material %}<span class="selo">Material</span>{% endif %}
+        {% if aula.resolucao %}<span class="selo">Resolução</span>{% endif %}
+        {% if aula.link_gravacao %}<span class="selo">Gravação</span>{% endif %}
+    </div>
+</a>
+{% empty %}
+<p class="aviso-vazio">Nenhuma aula publicada ainda. Volte em breve!</p>
+{% endfor %}
+{% endblock %}

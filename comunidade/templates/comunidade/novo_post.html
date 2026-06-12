@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Novo post — Curso Solução{% endblock %}
+
+{% block conteudo %}
+<p><a href="{% url 'comunidade' %}">&larr; Voltar para a comunidade</a></p>
+
+<h1>Novo post</h1>
+
+<div class="cartao">
+    <form method="post">
+        {% csrf_token %}
+        {% if form.errors %}<p class="erros">Verifique os campos abaixo.</p>{% endif %}
+        <p>
+            <label for="{{ form.nivel.id_for_label }}">Nível</label>
+            {{ form.nivel }}
+        </p>
+        <p>
+            <label for="{{ form.titulo.id_for_label }}">Título</label>
+            {{ form.titulo }}
+        </p>
+        <p>
+            <label for="{{ form.texto.id_for_label }}">Texto</label>
+            {{ form.texto }}
+        </p>
+        <button type="submit" class="botao">Publicar</button>
+    </form>
+</div>
+{% endblock %}
