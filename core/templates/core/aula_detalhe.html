@@ -37,6 +37,7 @@
 <div class="cartao comentario">
     <div class="cartao-meta">
         <strong>{{ comentario.autor.first_name|default:comentario.autor.email }}</strong>
+        {% if comentario.autor.is_staff %}<span class="selo selo-verde">Professor</span>{% endif %}
         <span>{{ comentario.criado_em|date:"d/m/Y H:i" }}</span>
     </div>
     <div class="cartao-texto">{{ comentario.texto }}</div>

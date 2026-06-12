@@ -68,6 +68,28 @@ class Aluno(AbstractUser):
         return self.niveis.all()
 
 
+class ProfessorManager(AlunoManager):
+    def get_queryset(self):
+        return super().get_queryset().filter(is_staff=True)
+
+
+class Professor(Aluno):
+    """Conta de administrador. Professores enxergam todos os níveis,
+    publicam aulas e materiais e podem cadastrar outros professores."""
+
+    objects = ProfessorManager()
+
+    class Meta:
+        proxy = True
+        verbose_name = 'professor'
+        verbose_name_plural = 'professores'
+
+    def save(self, *args, **kwargs):
+        self.is_staff = True
+        self.is_superuser = True
+        super().save(*args, **kwargs)
+
+
 class Aula(models.Model):
     titulo = models.CharField('título', max_length=200)
     data = models.DateField('data da aula')

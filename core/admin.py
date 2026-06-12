@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from .models import Aluno, Aula, ComentarioAula, Material, Nivel
+from .models import Aluno, Aula, ComentarioAula, Material, Nivel, Professor
 
 admin.site.site_header = 'Curso Solução — Administração'
 admin.site.site_title = 'Curso Solução'
@@ -10,16 +10,18 @@ admin.site.index_title = 'Gerenciamento da plataforma'
 
 @admin.register(Aluno)
 class AlunoAdmin(UserAdmin):
+    """Alunos: contas comuns, sem acesso ao gerenciamento."""
+
     list_display = ('email', 'first_name', 'last_name', 'lista_niveis', 'is_active')
-    list_filter = ('niveis', 'is_active', 'is_staff')
+    list_filter = ('niveis', 'is_active')
     search_fields = ('email', 'first_name', 'last_name')
     ordering = ('first_name', 'email')
-    filter_horizontal = ('niveis', 'groups', 'user_permissions')
+    filter_horizontal = ('niveis',)
 
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
         ('Dados do aluno', {'fields': ('first_name', 'last_name', 'niveis')}),
-        ('Permissões', {'fields': ('is_active', 'is_staff', 'is_superuser')}),
+        ('Acesso', {'fields': ('is_active',)}),
     )
     add_fieldsets = (
         (None, {
@@ -28,9 +30,39 @@ class AlunoAdmin(UserAdmin):
         }),
     )
 
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(is_staff=False)
+
     @admin.display(description='níveis')
     def lista_niveis(self, obj):
         return ', '.join(n.nome for n in obj.niveis.all()) or '—'
+
+
+@admin.register(Professor)
+class ProfessorAdmin(UserAdmin):
+    """Professores: contas de administrador. Um professor cadastrado por
+    aqui já sai com acesso total ao gerenciamento da plataforma."""
+
+    list_display = ('email', 'first_name', 'last_name', 'is_active')
+    list_filter = ('is_active',)
+    search_fields = ('email', 'first_name', 'last_name')
+    ordering = ('first_name', 'email')
+    filter_horizontal = ()
+
+    fieldsets = (
+        (None, {'fields': ('email', 'password')}),
+        ('Dados do professor', {'fields': ('first_name', 'last_name')}),
+        ('Acesso', {'fields': ('is_active',)}),
+    )
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('email', 'first_name', 'last_name', 'password1', 'password2'),
+        }),
+    )
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(is_staff=True)
 
 
 class ComentarioAulaInline(admin.TabularInline):
