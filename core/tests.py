@@ -16,7 +16,7 @@ class PlataformaTests(TestCase):
         self.aluno.niveis.add(self.n1)
         self.aula_n1 = Aula.objects.create(
             titulo='Contagem', data=date(2026, 6, 1), nivel=self.n1,
-            link_gravacao='https://www.youtube.com/watch?v=abc123XYZ',
+            link_gravacao='https://drive.google.com/file/d/abc123XYZ/view?pli=1',
         )
         self.aula_n2 = Aula.objects.create(
             titulo='Indução', data=date(2026, 6, 2), nivel=self.n2
@@ -42,10 +42,11 @@ class PlataformaTests(TestCase):
         resp = self.client.get(reverse('aula_detalhe', args=[self.aula_n2.pk]))
         self.assertEqual(resp.status_code, 404)
 
-    def test_youtube_embed_na_pagina_da_aula(self):
+    def test_drive_embed_na_pagina_da_aula(self):
         self.client.login(username='aluno@teste.com', password='senha123')
         resp = self.client.get(reverse('aula_detalhe', args=[self.aula_n1.pk]))
-        self.assertContains(resp, 'youtube.com/embed/abc123XYZ')
+        self.assertContains(resp, 'drive.google.com/file/d/abc123XYZ/preview')
+        self.assertContains(resp, self.aula_n1.link_gravacao)
 
     def test_materiais_mostra_so_do_nivel(self):
         Material.objects.create(titulo='Lista N1', nivel=self.n1, arquivo='materiais_avulsos/a.pdf')
@@ -62,11 +63,12 @@ class PlataformaTests(TestCase):
         self.assertContains(resp, 'Contagem')
         self.assertContains(resp, 'Indução')
 
-    def test_extracao_youtube_id(self):
+    def test_extracao_drive_id(self):
         aula = self.aula_n1
-        aula.link_gravacao = 'https://youtu.be/xyz789'
-        self.assertEqual(aula.youtube_id, 'xyz789')
-        aula.link_gravacao = 'https://www.youtube.com/live/live123?feature=share'
-        self.assertEqual(aula.youtube_id, 'live123')
+        self.assertEqual(aula.drive_id, 'abc123XYZ')
+        aula.link_gravacao = 'https://drive.google.com/file/d/xyz789/view'
+        self.assertEqual(aula.drive_id, 'xyz789')
         aula.link_gravacao = ''
-        self.assertIsNone(aula.youtube_id)
+        self.assertIsNone(aula.drive_id)
+        aula.link_gravacao = 'https://drive.google.com/drive/folders/pasta'
+        self.assertIsNone(aula.drive_id)

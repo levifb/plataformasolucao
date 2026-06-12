@@ -80,9 +80,10 @@ class Aula(models.Model):
         'resolução (PDF)', upload_to='resolucoes/', blank=True, null=True
     )
     link_gravacao = models.URLField(
-        'link da gravação (YouTube)',
+        'link da gravação (Google Drive)',
         blank=True,
-        help_text='Cole o link do vídeo no YouTube (pode ser não listado).',
+        help_text='Cole o link do arquivo da gravação no Google Drive '
+                  '(ex.: https://drive.google.com/file/d/ID/view).',
     )
 
     class Meta:
@@ -94,8 +95,11 @@ class Aula(models.Model):
         return f'{self.titulo} — {self.nivel.nome}'
 
     @property
-    def youtube_id(self):
-        return _youtube_id(self.link_gravacao)
+    def drive_id(self):
+        """Extrai o ID do arquivo de links como drive.google.com/file/d/ID/view."""
+        if not self.link_gravacao or '/file/d/' not in self.link_gravacao:
+            return None
+        return self.link_gravacao.split('/file/d/')[1].split('/')[0].split('?')[0]
 
 
 class Material(models.Model):
@@ -116,13 +120,3 @@ class Material(models.Model):
         return f'{self.titulo} — {self.nivel.nome}'
 
 
-def _youtube_id(link):
-    """Extrai o ID do vídeo de links como youtube.com/watch?v=X, youtu.be/X e youtube.com/live/X."""
-    if not link:
-        return None
-    if 'watch?v=' in link:
-        return link.split('watch?v=')[1].split('&')[0]
-    for prefixo in ('youtu.be/', '/embed/', '/live/'):
-        if prefixo in link:
-            return link.split(prefixo)[1].split('?')[0].strip('/')
-    return None

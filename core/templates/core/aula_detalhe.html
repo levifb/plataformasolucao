@@ -11,14 +11,15 @@
     <span>{{ aula.data|date:"d/m/Y" }}</span>
 </div>
 
-{% if aula.youtube_id %}
+{% if aula.drive_id %}
 <h2>Gravação da aula</h2>
 <div class="video">
-    <iframe src="https://www.youtube.com/embed/{{ aula.youtube_id }}"
+    <iframe src="https://drive.google.com/file/d/{{ aula.drive_id }}/preview"
             title="Gravação: {{ aula.titulo }}"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allow="autoplay; encrypted-media; picture-in-picture"
             allowfullscreen></iframe>
 </div>
+<p style="margin-bottom:1rem;"><a href="{{ aula.link_gravacao }}" target="_blank">🔗 Abrir gravação no Google Drive</a></p>
 {% endif %}
 
 <h2>Arquivos</h2>

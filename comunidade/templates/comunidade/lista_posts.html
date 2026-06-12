@@ -5,7 +5,9 @@
 {% block conteudo %}
 <h1>Comunidade</h1>
 
+{% if user.is_staff %}
 <p style="margin-bottom:1.2rem;"><a class="botao" href="{% url 'novo_post' %}">+ Novo post</a></p>
+{% endif %}
 
 {% if niveis|length > 1 %}
 <div class="filtros">

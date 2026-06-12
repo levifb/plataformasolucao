@@ -23,19 +23,22 @@ class ComunidadeTests(TestCase):
         )
         self.client.login(username='aluno@teste.com', password='senha123')
 
-    def test_criar_post(self):
+    def test_admin_pode_criar_post(self):
+        admin = Aluno.objects.create_superuser('admin@teste.com', 'senha123', first_name='Admin')
+        self.client.login(username='admin@teste.com', password='senha123')
         resp = self.client.post(reverse('novo_post'), {
-            'nivel': self.n1.pk, 'titulo': 'Dúvida de contagem', 'texto': 'Como resolvo?',
+            'nivel': self.n1.pk, 'titulo': 'Aviso da semana', 'texto': 'Aula confirmada!',
         })
-        post = Post.objects.get(titulo='Dúvida de contagem')
+        post = Post.objects.get(titulo='Aviso da semana')
         self.assertRedirects(resp, reverse('post_detalhe', args=[post.pk]))
-        self.assertEqual(post.autor, self.aluno)
+        self.assertEqual(post.autor, admin)
 
-    def test_nao_pode_postar_em_nivel_que_nao_pertence(self):
-        self.client.post(reverse('novo_post'), {
-            'nivel': self.n2.pk, 'titulo': 'Invasão', 'texto': 'x',
+    def test_aluno_nao_pode_criar_post(self):
+        resp = self.client.post(reverse('novo_post'), {
+            'nivel': self.n1.pk, 'titulo': 'Tentativa', 'texto': 'x',
         })
-        self.assertFalse(Post.objects.filter(titulo='Invasão').exists())
+        self.assertRedirects(resp, reverse('comunidade'))
+        self.assertFalse(Post.objects.filter(titulo='Tentativa').exists())
 
     def test_lista_so_mostra_posts_do_nivel(self):
         resp = self.client.get(reverse('comunidade'))

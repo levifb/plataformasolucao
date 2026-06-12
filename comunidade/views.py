@@ -39,6 +39,8 @@ def lista_posts(request):
 
 @login_required
 def novo_post(request):
+    if not request.user.is_staff:
+        return redirect('comunidade')
     if request.method == 'POST':
         form = PostForm(request.POST, aluno=request.user)
         if form.is_valid():
