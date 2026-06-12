@@ -4,8 +4,10 @@
 
 {% block conteudo %}
 <div class="caixa-login">
-    <h1>Senha alterada!</h1>
-    <p class="login-texto">Sua senha foi redefinida com sucesso. Agora é só entrar com a nova senha.</p>
-    <a href="{% url 'login' %}" class="botao">Ir para o login</a>
+    <div class="login-corpo">
+        <h1>Senha alterada<span class="qed" aria-hidden="true"></span></h1>
+        <p class="login-texto">Sua senha foi redefinida com sucesso. Agora é só entrar com a nova senha.</p>
+        <a href="{% url 'login' %}" class="botao">Ir para o login</a>
+    </div>
 </div>
 {% endblock %}

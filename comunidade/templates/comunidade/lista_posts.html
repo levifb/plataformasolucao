@@ -3,10 +3,11 @@
 {% block titulo %}Comunidade — Curso Solução{% endblock %}
 
 {% block conteudo %}
-<h1>Comunidade</h1>
+<h1>Comunidade<span class="qed" aria-hidden="true"></span></h1>
+<p class="sub">Avisos e discussões do seu nível.</p>
 
 {% if user.is_staff %}
-<p style="margin-bottom:1.2rem;"><a class="botao" href="{% url 'novo_post' %}">+ Novo post</a></p>
+<p class="acao-admin"><a class="botao botao-borda" href="{% url 'novo_post' %}">+ Novo post</a></p>
 {% endif %}
 
 {% if niveis|length > 1 %}
@@ -25,14 +26,19 @@
 </form>
 
 {% for post in posts %}
-<a class="cartao" href="{% url 'post_detalhe' post.pk %}">
-    <div class="cartao-titulo">{{ post.titulo }}</div>
-    <div class="cartao-meta">
-        <span class="selo selo-azul">{{ post.nivel.nome }}</span>
-        <span>{{ post.autor.first_name|default:post.autor.email }}</span>
-        <span>{{ post.criado_em|date:"d/m/Y H:i" }}</span>
-        <span class="selo selo-cinza">{{ post.comentarios.count }} comentário{{ post.comentarios.count|pluralize }}</span>
-    </div>
+<a class="cartao item" href="{% url 'post_detalhe' post.pk %}">
+    <span class="item-data">
+        <span class="item-dia">{{ post.criado_em|date:"d" }}</span>
+        <span class="item-mes">{{ post.criado_em|date:"M Y" }}</span>
+    </span>
+    <span class="item-info">
+        <span class="cartao-titulo">{{ post.titulo }}</span>
+        <span class="cartao-meta">
+            <span class="selo">{{ post.nivel.nome }}</span>
+            <span>{{ post.autor.first_name|default:post.autor.email }}</span>
+            <span>{{ post.comentarios.count }} comentário{{ post.comentarios.count|pluralize }}</span>
+        </span>
+    </span>
 </a>
 {% empty %}
 {% if busca %}

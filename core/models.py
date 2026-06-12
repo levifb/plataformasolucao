@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 
@@ -74,10 +75,12 @@ class Aula(models.Model):
         Nivel, verbose_name='nível', on_delete=models.PROTECT, related_name='aulas'
     )
     material = models.FileField(
-        'material (PDF)', upload_to='materiais/', blank=True, null=True
-    )
-    resolucao = models.FileField(
-        'resolução (PDF)', upload_to='resolucoes/', blank=True, null=True
+        'material resolvido (PDF)',
+        upload_to='materiais/',
+        blank=True,
+        null=True,
+        help_text='Versão resolvida do material, publicada após a aula. '
+                  'O material puro fica na aba Materiais.',
     )
     link_gravacao = models.URLField(
         'link da gravação (Google Drive)',
@@ -100,6 +103,28 @@ class Aula(models.Model):
         if not self.link_gravacao or '/file/d/' not in self.link_gravacao:
             return None
         return self.link_gravacao.split('/file/d/')[1].split('/')[0].split('?')[0]
+
+
+class ComentarioAula(models.Model):
+    aula = models.ForeignKey(
+        Aula, verbose_name='aula', on_delete=models.CASCADE, related_name='comentarios'
+    )
+    autor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name='autor',
+        on_delete=models.CASCADE,
+        related_name='comentarios_aula',
+    )
+    texto = models.TextField('texto')
+    criado_em = models.DateTimeField('criado em', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'comentário de aula'
+        verbose_name_plural = 'comentários de aula'
+        ordering = ['criado_em']
+
+    def __str__(self):
+        return f'Comentário de {self.autor} em "{self.aula}"'
 
 
 class Material(models.Model):

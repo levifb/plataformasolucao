@@ -3,13 +3,13 @@
 {% block titulo %}{{ aula.titulo }} — Curso Solução{% endblock %}
 
 {% block conteudo %}
-<p><a href="{% url 'home' %}">&larr; Voltar para as aulas</a></p>
+<a class="voltar" href="{% url 'home' %}">&larr; Voltar para as aulas</a>
 
-<h1>{{ aula.titulo }}</h1>
-<div class="cartao-meta" style="margin-bottom: 1.2rem;">
-    <span class="selo selo-azul">{{ aula.nivel.nome }}</span>
+<h1>{{ aula.titulo }}<span class="qed" aria-hidden="true"></span></h1>
+<p class="cartao-meta meta-pagina">
+    <span class="selo">{{ aula.nivel.nome }}</span>
     <span>{{ aula.data|date:"d/m/Y" }}</span>
-</div>
+</p>
 
 {% if aula.drive_id %}
 <h2>Gravação da aula</h2>
@@ -19,19 +19,50 @@
             allow="autoplay; encrypted-media; picture-in-picture"
             allowfullscreen></iframe>
 </div>
-<p style="margin-bottom:1rem;"><a href="{{ aula.link_gravacao }}" target="_blank">🔗 Abrir gravação no Google Drive</a></p>
+<p class="video-link"><a href="{{ aula.link_gravacao }}" target="_blank" rel="noopener">Abrir gravação no Google Drive &nearr;</a></p>
 {% endif %}
 
 <h2>Arquivos</h2>
 <div class="cartao">
     {% if aula.material %}
-    <p style="margin-bottom:.6rem;"><a class="botao botao-azul" href="{{ aula.material.url }}" target="_blank">📄 Baixar material</a></p>
+    <p class="linha-arquivo"><a class="botao" href="{{ aula.material.url }}" target="_blank" rel="noopener">Baixar material resolvido<span class="qed qed-botao" aria-hidden="true"></span></a></p>
+    {% else %}
+    <p class="aviso-vazio">O material resolvido desta aula ainda não foi publicado.</p>
     {% endif %}
-    {% if aula.resolucao %}
-    <p><a class="botao" href="{{ aula.resolucao.url }}" target="_blank">✅ Baixar resolução</a></p>
+</div>
+
+<h2>Comentários ({{ comentarios|length }})</h2>
+
+{% for comentario in comentarios %}
+<div class="cartao comentario">
+    <div class="cartao-meta">
+        <strong>{{ comentario.autor.first_name|default:comentario.autor.email }}</strong>
+        <span>{{ comentario.criado_em|date:"d/m/Y H:i" }}</span>
+    </div>
+    <div class="cartao-texto">{{ comentario.texto }}</div>
+    {% if comentario.autor == user or user.is_staff %}
+    <div class="comentario-acoes">
+        {% if comentario.autor == user %}
+        <a href="{% url 'editar_comentario_aula' comentario.pk %}">Editar</a>
+        {% endif %}
+        <form method="post" action="{% url 'excluir_comentario_aula' comentario.pk %}"
+              onsubmit="return confirm('Excluir este comentário?');">
+            {% csrf_token %}
+            <button type="submit">Excluir</button>
+        </form>
+    </div>
     {% endif %}
-    {% if not aula.material and not aula.resolucao %}
-    <p class="aviso-vazio">Os arquivos desta aula ainda não foram publicados.</p>
-    {% endif %}
+</div>
+{% empty %}
+<p class="aviso-vazio">Nenhum comentário ainda.</p>
+{% endfor %}
+
+<h2>Comentar</h2>
+<div class="cartao">
+    <form method="post">
+        {% csrf_token %}
+        <p><textarea name="texto" rows="4" placeholder="Tem alguma dúvida sobre esta aula? Escreva aqui..." required></textarea></p>
+        <button type="submit" class="botao">Enviar comentário</button>
+    </form>
 </div>
 {% endblock %}

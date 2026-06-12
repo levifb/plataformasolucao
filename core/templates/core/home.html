@@ -1,10 +1,11 @@
 {% extends 'base.html' %}
 
 {% block conteudo %}
-<h1>Olá, {{ user.first_name|default:user.email }}!</h1>
+<h1>Olá, {{ user.first_name|default:user.email }}<span class="qed" aria-hidden="true"></span></h1>
+<p class="sub">Suas aulas, gravações e listas para treinar.</p>
 
 {% if user.is_staff %}
-<p style="margin-bottom:1.2rem;"><a class="botao" href="{% url 'admin:core_aula_add' %}">+ Nova aula</a></p>
+<p class="acao-admin"><a class="botao botao-borda" href="{% url 'admin:core_aula_add' %}">+ Nova aula</a></p>
 {% endif %}
 
 {% if niveis|length > 1 %}
@@ -23,15 +24,19 @@
 </form>
 
 {% for aula in aulas %}
-<a class="cartao" href="{% url 'aula_detalhe' aula.pk %}">
-    <div class="cartao-titulo">{{ aula.titulo }}</div>
-    <div class="cartao-meta">
-        <span class="selo selo-azul">{{ aula.nivel.nome }}</span>
-        <span>{{ aula.data|date:"d/m/Y" }}</span>
-        {% if aula.material %}<span class="selo">Material</span>{% endif %}
-        {% if aula.resolucao %}<span class="selo">Resolução</span>{% endif %}
-        {% if aula.link_gravacao %}<span class="selo">Gravação</span>{% endif %}
-    </div>
+<a class="cartao item" href="{% url 'aula_detalhe' aula.pk %}">
+    <span class="item-data">
+        <span class="item-dia">{{ aula.data|date:"d" }}</span>
+        <span class="item-mes">{{ aula.data|date:"M Y" }}</span>
+    </span>
+    <span class="item-info">
+        <span class="cartao-titulo">{{ aula.titulo }}</span>
+        <span class="cartao-meta">
+            <span class="selo">{{ aula.nivel.nome }}</span>
+            {% if aula.material %}<span class="recurso">✓ material resolvido</span>{% endif %}
+            {% if aula.link_gravacao %}<span class="recurso">✓ gravação</span>{% endif %}
+        </span>
+    </span>
 </a>
 {% empty %}
 {% if busca %}

@@ -3,9 +3,9 @@
 {% block titulo %}Novo post — Curso Solução{% endblock %}
 
 {% block conteudo %}
-<p><a href="{% url 'comunidade' %}">&larr; Voltar para a comunidade</a></p>
+<a class="voltar" href="{% url 'comunidade' %}">&larr; Voltar para a comunidade</a>
 
-<h1>Novo post</h1>
+<h1>Novo post<span class="qed" aria-hidden="true"></span></h1>
 
 <div class="cartao">
     <form method="post">

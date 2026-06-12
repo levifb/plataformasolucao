@@ -4,7 +4,11 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0f2b4c">
     <title>{% block titulo %}Curso Solução{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=STIX+Two+Text:ital,wght@0,500;0,600;1,400&family=Schibsted+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/estilo.css' %}">
 </head>
 <body>
@@ -18,6 +22,9 @@
             <a href="{% url 'home' %}" {% if '/comunidade/' not in request.path and '/materiais/' not in request.path %}class="ativo"{% endif %}>Aulas</a>
             <a href="{% url 'materiais' %}" {% if '/materiais/' in request.path %}class="ativo"{% endif %}>Materiais</a>
             <a href="{% url 'comunidade' %}" {% if '/comunidade/' in request.path %}class="ativo"{% endif %}>Comunidade</a>
+            {% if user.is_staff %}
+            <a class="botao-admin" href="{% url 'admin:index' %}">Administração</a>
+            {% endif %}
             <form method="post" action="{% url 'logout' %}" class="form-sair">
                 {% csrf_token %}
                 <button type="submit">Sair</button>
@@ -32,7 +39,7 @@
 </main>
 
 <footer class="rodape">
-    Curso Solução — Olimpíadas de Matemática
+    Curso Solução — Olimpíadas de Matemática<span class="qed" aria-hidden="true"></span>
 </footer>
 </body>
 </html>

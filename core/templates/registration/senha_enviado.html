@@ -4,11 +4,13 @@
 
 {% block conteudo %}
 <div class="caixa-login">
-    <h1>Email enviado!</h1>
-    <p class="login-texto">
-        Se o email informado estiver cadastrado, você receberá em instantes um link
-        para criar uma nova senha. Verifique também a caixa de spam.
-    </p>
-    <p class="login-links"><a href="{% url 'login' %}">Voltar para o login</a></p>
+    <div class="login-corpo">
+        <h1>Email enviado<span class="qed" aria-hidden="true"></span></h1>
+        <p class="login-texto">
+            Se o email informado estiver cadastrado, você receberá em instantes um link
+            para criar uma nova senha. Verifique também a caixa de spam.
+        </p>
+        <p class="login-links"><a href="{% url 'login' %}">Voltar para o login</a></p>
+    </div>
 </div>
 {% endblock %}

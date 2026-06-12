@@ -1,8 +1,10 @@
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import get_object_or_404, render
+from django.http import HttpResponseForbidden
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
 from .listagem import filtrar_listagem
-from .models import Aula, Material
+from .models import Aula, ComentarioAula, Material
 
 
 @login_required
@@ -32,4 +34,37 @@ def aula_detalhe(request, pk):
         pk=pk,
         nivel__in=request.user.niveis_visiveis(),
     )
-    return render(request, 'core/aula_detalhe.html', {'aula': aula})
+    if request.method == 'POST':
+        texto = request.POST.get('texto', '').strip()
+        if texto:
+            ComentarioAula.objects.create(aula=aula, autor=request.user, texto=texto)
+            return redirect('aula_detalhe', pk=aula.pk)
+    comentarios = aula.comentarios.select_related('autor')
+    return render(request, 'core/aula_detalhe.html', {
+        'aula': aula,
+        'comentarios': comentarios,
+    })
+
+
+@login_required
+def editar_comentario_aula(request, pk):
+    comentario = get_object_or_404(
+        ComentarioAula.objects.select_related('aula'), pk=pk, autor=request.user
+    )
+    if request.method == 'POST':
+        texto = request.POST.get('texto', '').strip()
+        if texto:
+            comentario.texto = texto
+            comentario.save()
+            return redirect('aula_detalhe', pk=comentario.aula_id)
+    return render(request, 'core/editar_comentario_aula.html', {'comentario': comentario})
+
+
+@login_required
+@require_POST
+def excluir_comentario_aula(request, pk):
+    comentario = get_object_or_404(ComentarioAula, pk=pk)
+    if comentario.autor_id != request.user.pk and not request.user.is_staff:
+        return HttpResponseForbidden('Você não pode excluir este comentário.')
+    comentario.delete()
+    return redirect('aula_detalhe', pk=comentario.aula_id)

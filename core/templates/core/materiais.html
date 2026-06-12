@@ -3,11 +3,11 @@
 {% block titulo %}Materiais — Curso Solução{% endblock %}
 
 {% block conteudo %}
-<h1>Materiais</h1>
-<p style="color:var(--cinza); margin-bottom:1.2rem;">Materiais das próximas aulas do seu nível.</p>
+<h1>Materiais<span class="qed" aria-hidden="true"></span></h1>
+<p class="sub">Materiais das próximas aulas do seu nível.</p>
 
 {% if user.is_staff %}
-<p style="margin-bottom:1.2rem;"><a class="botao" href="{% url 'admin:core_material_add' %}">+ Novo material</a></p>
+<p class="acao-admin"><a class="botao botao-borda" href="{% url 'admin:core_material_add' %}">+ Novo material</a></p>
 {% endif %}
 
 {% if niveis|length > 1 %}
@@ -26,14 +26,19 @@
 </form>
 
 {% for material in materiais %}
-<div class="cartao">
-    <div class="cartao-titulo">{{ material.titulo }}</div>
-    <div class="cartao-meta">
-        <span class="selo selo-azul">{{ material.nivel.nome }}</span>
-        <span>{{ material.criado_em|date:"d/m/Y" }}</span>
+<div class="cartao item">
+    <div class="item-data">
+        <span class="item-dia">{{ material.criado_em|date:"d" }}</span>
+        <span class="item-mes">{{ material.criado_em|date:"M Y" }}</span>
     </div>
-    {% if material.descricao %}<div class="cartao-texto">{{ material.descricao }}</div>{% endif %}
-    <p style="margin-top:.8rem;"><a class="botao botao-azul" href="{{ material.arquivo.url }}" target="_blank">📄 Baixar material</a></p>
+    <div class="item-info">
+        <div class="cartao-titulo">{{ material.titulo }}</div>
+        <div class="cartao-meta">
+            <span class="selo">{{ material.nivel.nome }}</span>
+        </div>
+        {% if material.descricao %}<div class="cartao-texto">{{ material.descricao }}</div>{% endif %}
+        <p class="linha-arquivo"><a class="botao botao-azul" href="{{ material.arquivo.url }}" target="_blank" rel="noopener">Baixar material</a></p>
+    </div>
 </div>
 {% empty %}
 {% if busca %}

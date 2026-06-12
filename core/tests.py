@@ -5,7 +5,7 @@ from django.core import mail
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import Aluno, Aula, Material, Nivel
+from .models import Aluno, Aula, ComentarioAula, Material, Nivel
 
 
 class PlataformaTests(TestCase):
@@ -144,6 +144,18 @@ class PlataformaTests(TestCase):
         self.assertEqual(aviso.subject, 'Novo material: Lista 5')
         self.assertEqual(aviso.bcc, ['aluno@teste.com'])
 
+    def test_material_resolvido_na_pagina_da_aula(self):
+        self.aula_n1.material = 'materiais/lista-resolvida.pdf'
+        self.aula_n1.save()
+        self.client.login(username='aluno@teste.com', password='senha123')
+        resp = self.client.get(reverse('aula_detalhe', args=[self.aula_n1.pk]))
+        self.assertContains(resp, 'Baixar material resolvido')
+
+    def test_aula_sem_material_mostra_aviso(self):
+        self.client.login(username='aluno@teste.com', password='senha123')
+        resp = self.client.get(reverse('aula_detalhe', args=[self.aula_n1.pk]))
+        self.assertContains(resp, 'O material resolvido desta aula ainda não foi publicado.')
+
     def test_extracao_drive_id(self):
         aula = self.aula_n1
         self.assertEqual(aula.drive_id, 'abc123XYZ')
@@ -153,3 +165,89 @@ class PlataformaTests(TestCase):
         self.assertIsNone(aula.drive_id)
         aula.link_gravacao = 'https://drive.google.com/drive/folders/pasta'
         self.assertIsNone(aula.drive_id)
+
+
+class ComentarioAulaTests(TestCase):
+    def setUp(self):
+        self.n1 = Nivel.objects.get(numero=1)
+        self.aluno = Aluno.objects.create_user(
+            email='aluno@teste.com', password='senha123', first_name='Ana'
+        )
+        self.aluno.niveis.add(self.n1)
+        self.outro = Aluno.objects.create_user(
+            email='outro@teste.com', password='senha123', first_name='Beto'
+        )
+        self.outro.niveis.add(self.n1)
+        self.aula = Aula.objects.create(
+            titulo='Contagem', data=date(2026, 6, 1), nivel=self.n1
+        )
+        self.client.login(username='aluno@teste.com', password='senha123')
+
+    def test_comentar_na_aula(self):
+        self.client.post(
+            reverse('aula_detalhe', args=[self.aula.pk]), {'texto': 'Não entendi o exemplo 3.'}
+        )
+        comentario = ComentarioAula.objects.get(aula=self.aula)
+        self.assertEqual(comentario.texto, 'Não entendi o exemplo 3.')
+        self.assertEqual(comentario.autor, self.aluno)
+
+    def test_comentario_aparece_na_pagina(self):
+        ComentarioAula.objects.create(aula=self.aula, autor=self.aluno, texto='Ótima aula!')
+        resp = self.client.get(reverse('aula_detalhe', args=[self.aula.pk]))
+        self.assertContains(resp, 'Ótima aula!')
+        self.assertContains(resp, 'Comentários (1)')
+
+    def test_autor_edita_proprio_comentario(self):
+        comentario = ComentarioAula.objects.create(
+            aula=self.aula, autor=self.aluno, texto='Original'
+        )
+        resp = self.client.post(
+            reverse('editar_comentario_aula', args=[comentario.pk]), {'texto': 'Corrigido'}
+        )
+        self.assertRedirects(resp, reverse('aula_detalhe', args=[self.aula.pk]))
+        comentario.refresh_from_db()
+        self.assertEqual(comentario.texto, 'Corrigido')
+
+    def test_nao_edita_comentario_de_outro(self):
+        comentario = ComentarioAula.objects.create(
+            aula=self.aula, autor=self.outro, texto='De outra pessoa'
+        )
+        resp = self.client.post(
+            reverse('editar_comentario_aula', args=[comentario.pk]), {'texto': 'Invadido'}
+        )
+        self.assertEqual(resp.status_code, 404)
+        comentario.refresh_from_db()
+        self.assertEqual(comentario.texto, 'De outra pessoa')
+
+    def test_autor_exclui_proprio_comentario(self):
+        comentario = ComentarioAula.objects.create(
+            aula=self.aula, autor=self.aluno, texto='Apagável'
+        )
+        resp = self.client.post(reverse('excluir_comentario_aula', args=[comentario.pk]))
+        self.assertRedirects(resp, reverse('aula_detalhe', args=[self.aula.pk]))
+        self.assertFalse(ComentarioAula.objects.filter(pk=comentario.pk).exists())
+
+    def test_nao_exclui_comentario_de_outro(self):
+        comentario = ComentarioAula.objects.create(
+            aula=self.aula, autor=self.outro, texto='De outra pessoa'
+        )
+        resp = self.client.post(reverse('excluir_comentario_aula', args=[comentario.pk]))
+        self.assertEqual(resp.status_code, 403)
+        self.assertTrue(ComentarioAula.objects.filter(pk=comentario.pk).exists())
+
+    def test_staff_exclui_qualquer_comentario(self):
+        comentario = ComentarioAula.objects.create(
+            aula=self.aula, autor=self.aluno, texto='Comentário'
+        )
+        Aluno.objects.create_superuser('admin@teste.com', 'senha123', first_name='Admin')
+        self.client.login(username='admin@teste.com', password='senha123')
+        self.client.post(reverse('excluir_comentario_aula', args=[comentario.pk]))
+        self.assertFalse(ComentarioAula.objects.filter(pk=comentario.pk).exists())
+
+    def test_excluir_exige_post(self):
+        comentario = ComentarioAula.objects.create(
+            aula=self.aula, autor=self.aluno, texto='Comentário'
+        )
+        resp = self.client.get(reverse('excluir_comentario_aula', args=[comentario.pk]))
+        self.assertEqual(resp.status_code, 405)
+        self.assertTrue(ComentarioAula.objects.filter(pk=comentario.pk).exists())

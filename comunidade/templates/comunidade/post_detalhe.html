@@ -3,17 +3,17 @@
 {% block titulo %}{{ post.titulo }} — Curso Solução{% endblock %}
 
 {% block conteudo %}
-<p><a href="{% url 'comunidade' %}">&larr; Voltar para a comunidade</a></p>
+<a class="voltar" href="{% url 'comunidade' %}">&larr; Voltar para a comunidade</a>
 
-<div class="cartao">
-    <div class="cartao-titulo">{{ post.titulo }}</div>
+<article class="cartao">
+    <h1 class="post-titulo">{{ post.titulo }}<span class="qed" aria-hidden="true"></span></h1>
     <div class="cartao-meta">
-        <span class="selo selo-azul">{{ post.nivel.nome }}</span>
+        <span class="selo">{{ post.nivel.nome }}</span>
         <span>{{ post.autor.first_name|default:post.autor.email }}</span>
         <span>{{ post.criado_em|date:"d/m/Y H:i" }}</span>
     </div>
     <div class="cartao-texto">{{ post.texto }}</div>
-</div>
+</article>
 
 <h2>Comentários ({{ comentarios|length }})</h2>
 
