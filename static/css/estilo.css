@@ -477,6 +477,8 @@ a.cartao:hover {
 /* ---------- Formulários ---------- */
 form p { margin-bottom: .9rem; }
 label { display: block; font-weight: 500; margin-bottom: .3rem; }
+.campo-marcado { display: flex; align-items: center; gap: .5rem; }
+.campo-marcado label { margin-bottom: 0; }
 input[type=text], input[type=email], input[type=password], input[type=search],
 input[type=date], input[type=time], input[type=url],
 textarea, select {
@@ -600,6 +602,13 @@ input:focus, textarea:focus, select:focus {
 
 /* ---------- Post em destaque ---------- */
 .post-titulo { font-size: 1.35rem; margin-bottom: 0; }
+
+.post-imagem {
+    display: block;
+    max-width: 100%;
+    margin-top: .85rem;
+    border-radius: 6px;
+}
 
 /* ---------- Estados vazios ---------- */
 .aviso-vazio {

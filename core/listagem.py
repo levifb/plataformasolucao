@@ -15,7 +15,10 @@ def filtrar_listagem(request, queryset, campos_busca):
     nivel_filtro = request.GET.get('nivel')
     nivel_filtro = int(nivel_filtro) if nivel_filtro and nivel_filtro.isdigit() else None
     if nivel_filtro:
-        queryset = queryset.filter(nivel__numero=nivel_filtro)
+        # Itens sem nível (ex.: post para todos os níveis) valem para qualquer filtro.
+        queryset = queryset.filter(
+            Q(nivel__numero=nivel_filtro) | Q(nivel__isnull=True)
+        )
 
     busca = request.GET.get('q', '').strip()
     if busca:

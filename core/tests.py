@@ -314,13 +314,22 @@ class ProfessorTests(TestCase):
         self.professor = Professor.objects.create_user(
             email='prof@teste.com', password='senha123', first_name='Levi'
         )
+        self.superusuario = Professor.objects.create_superuser(
+            email='dona@teste.com', password='senha123', first_name='Cal'
+        )
 
-    def test_professor_nasce_administrador(self):
+    def test_professor_nasce_no_grupo_sem_ser_superusuario(self):
         self.assertTrue(self.professor.is_staff)
-        self.assertTrue(self.professor.is_superuser)
+        self.assertFalse(self.professor.is_superuser)
+        self.assertTrue(self.professor.groups.filter(name='Professores').exists())
+
+    def test_superusuario_continua_sendo_professor(self):
+        self.assertIn(self.superusuario, Professor.objects.all())
 
     def test_professores_e_alunos_separados(self):
-        self.assertEqual(list(Professor.objects.all()), [self.professor])
+        self.assertCountEqual(
+            Professor.objects.all(), [self.professor, self.superusuario]
+        )
         self.assertIn(self.aluno, Aluno.objects.filter(is_staff=False))
 
     def test_saudacao_do_professor_na_home(self):
@@ -338,8 +347,17 @@ class ProfessorTests(TestCase):
         resp = self.client.get(reverse('admin:index'))
         self.assertEqual(resp.status_code, 200)
 
-    def test_professor_cadastra_outro_professor(self):
+    def test_professor_gerencia_aulas_mas_nao_alunos(self):
         self.client.login(username='prof@teste.com', password='senha123')
+        resp = self.client.get(reverse('admin:core_aula_add'))
+        self.assertEqual(resp.status_code, 200)
+        resp = self.client.get(reverse('admin:core_aluno_changelist'))
+        self.assertEqual(resp.status_code, 403)
+        resp = self.client.get(reverse('admin:core_professor_add'))
+        self.assertEqual(resp.status_code, 403)
+
+    def test_superusuario_cadastra_professor(self):
+        self.client.login(username='dona@teste.com', password='senha123')
         resp = self.client.post(reverse('admin:core_professor_add'), {
             'email': 'novo.prof@teste.com',
             'first_name': 'Carla',
@@ -350,7 +368,8 @@ class ProfessorTests(TestCase):
         self.assertEqual(resp.status_code, 302)
         novo = Professor.objects.get(email='novo.prof@teste.com')
         self.assertTrue(novo.is_staff)
-        self.assertTrue(novo.is_superuser)
+        self.assertFalse(novo.is_superuser)
+        self.assertTrue(novo.groups.filter(name='Professores').exists())
 
     def test_aluno_nao_acessa_gerenciamento(self):
         self.client.login(username='aluno@teste.com', password='senha123')

@@ -43,10 +43,11 @@ class AlunoAdmin(UserAdmin):
 
 @admin.register(Professor)
 class ProfessorAdmin(UserAdmin):
-    """Professores: contas de administrador. Um professor cadastrado por
-    aqui já sai com acesso total ao gerenciamento da plataforma."""
+    """Professores: gerenciam aulas, materiais e calendário via grupo
+    Professores. Só superusuários acessam esta tela — para cadastrar
+    professores ou promover um professor a superusuário."""
 
-    list_display = ('email', 'first_name', 'last_name', 'is_active')
+    list_display = ('email', 'first_name', 'last_name', 'is_active', 'is_superuser')
     list_filter = ('is_active',)
     search_fields = ('email', 'first_name', 'last_name')
     ordering = ('first_name', 'email')
@@ -55,7 +56,11 @@ class ProfessorAdmin(UserAdmin):
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
         ('Dados do professor', {'fields': ('first_name', 'last_name')}),
-        ('Acesso', {'fields': ('is_active',)}),
+        ('Acesso', {
+            'fields': ('is_active', 'is_superuser'),
+            'description': 'Superusuários podem tudo, inclusive cadastrar '
+                           'professores e promover outros superusuários.',
+        }),
     )
     add_fieldsets = (
         (None, {

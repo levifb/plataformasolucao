@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
@@ -12,7 +13,7 @@ from .models import Comentario, Post
 class PostForm(forms.ModelForm):
     class Meta:
         model = Post
-        fields = ['nivel', 'titulo', 'texto']
+        fields = ['nivel', 'titulo', 'texto', 'imagem', 'arquivo', 'comentarios_habilitados']
         widgets = {
             'titulo': forms.TextInput(attrs={'placeholder': 'Título do post'}),
             'texto': forms.Textarea(attrs={'rows': 6, 'placeholder': 'Escreva sua dúvida ou mensagem...'}),
@@ -21,13 +22,16 @@ class PostForm(forms.ModelForm):
     def __init__(self, *args, aluno=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['nivel'].queryset = aluno.niveis_visiveis()
-        self.fields['nivel'].empty_label = None
+        self.fields['nivel'].empty_label = 'Todos os níveis'
+        self.fields['nivel'].required = False
 
 
 @login_required
 def lista_posts(request):
     niveis = request.user.niveis_visiveis()
-    posts = Post.objects.filter(nivel__in=niveis).select_related('autor', 'nivel')
+    posts = Post.objects.filter(
+        Q(nivel__in=niveis) | Q(nivel__isnull=True)
+    ).select_related('autor', 'nivel')
 
     contexto = filtrar_listagem(request, posts, campos_busca=['titulo', 'texto'])
     contexto.update({'posts': contexto['pagina'], 'niveis': niveis})
@@ -39,7 +43,7 @@ def novo_post(request):
     if not request.user.is_staff:
         return redirect('comunidade')
     if request.method == 'POST':
-        form = PostForm(request.POST, aluno=request.user)
+        form = PostForm(request.POST, request.FILES, aluno=request.user)
         if form.is_valid():
             post = form.save(commit=False)
             post.autor = request.user
@@ -54,10 +58,10 @@ def novo_post(request):
 def post_detalhe(request, pk):
     post = get_object_or_404(
         Post.objects.select_related('autor', 'nivel'),
+        Q(nivel__in=request.user.niveis_visiveis()) | Q(nivel__isnull=True),
         pk=pk,
-        nivel__in=request.user.niveis_visiveis(),
     )
-    if request.method == 'POST':
+    if request.method == 'POST' and post.comentarios_habilitados:
         texto = request.POST.get('texto', '').strip()
         if texto:
             Comentario.objects.create(post=post, autor=request.user, texto=texto)

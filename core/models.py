@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.contrib.auth.models import AbstractUser, BaseUserManager, Group
 from django.core.validators import FileExtensionValidator
 from django.db import models
 
@@ -78,9 +78,14 @@ class ProfessorManager(AlunoManager):
         return super().get_queryset().filter(is_staff=True)
 
 
+GRUPO_PROFESSORES = 'Professores'
+
+
 class Professor(Aluno):
-    """Conta de administrador. Professores enxergam todos os níveis,
-    publicam aulas e materiais e podem cadastrar outros professores."""
+    """Conta de professor. Enxerga todos os níveis e gerencia aulas, materiais
+    e calendário pelas permissões do grupo Professores — mas não mexe em
+    alunos, professores nem níveis. Cadastrar professores e promover um
+    professor a superusuário é exclusivo de superusuários."""
 
     objects = ProfessorManager()
 
@@ -91,8 +96,9 @@ class Professor(Aluno):
 
     def save(self, *args, **kwargs):
         self.is_staff = True
-        self.is_superuser = True
         super().save(*args, **kwargs)
+        grupo, _ = Group.objects.get_or_create(name=GRUPO_PROFESSORES)
+        self.groups.add(grupo)
 
 
 class HorarioAula(models.Model):

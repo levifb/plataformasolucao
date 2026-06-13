@@ -1,9 +1,15 @@
-from django.test import TestCase
+import shutil
+import tempfile
+
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from core.models import Aluno, Nivel
 
 from .models import Comentario, Post
+
+MEDIA_TESTES = tempfile.mkdtemp()
 
 
 class ComunidadeTests(TestCase):
@@ -43,6 +49,63 @@ class ComunidadeTests(TestCase):
     def test_lista_so_mostra_posts_do_nivel(self):
         resp = self.client.get(reverse('comunidade'))
         self.assertNotContains(resp, 'Post nível 2')
+
+    def test_post_sem_nivel_aparece_para_todos(self):
+        admin = Aluno.objects.create_superuser('admin@teste.com', 'senha123', first_name='Admin')
+        post = Post.objects.create(
+            nivel=None, autor=admin, titulo='Aviso geral', texto='Para todos!'
+        )
+
+        # Alunos de níveis diferentes veem o post na lista e abrem o detalhe.
+        for email in ['aluno@teste.com', 'outro@teste.com']:
+            self.client.login(username=email, password='senha123')
+            resp = self.client.get(reverse('comunidade'))
+            self.assertContains(resp, 'Aviso geral')
+            self.assertContains(resp, 'Todos os níveis')
+            resp = self.client.get(reverse('post_detalhe', args=[post.pk]))
+            self.assertEqual(resp.status_code, 200)
+
+    def test_post_sem_nivel_aparece_mesmo_com_filtro_de_nivel(self):
+        admin = Aluno.objects.create_superuser('admin@teste.com', 'senha123', first_name='Admin')
+        Post.objects.create(
+            nivel=None, autor=admin, titulo='Aviso geral', texto='Para todos!'
+        )
+        self.client.login(username='admin@teste.com', password='senha123')
+        resp = self.client.get(reverse('comunidade'), {'nivel': self.n1.numero})
+        self.assertContains(resp, 'Aviso geral')
+
+    def test_post_sem_comentarios_nao_aceita_comentario(self):
+        admin = Aluno.objects.create_superuser('admin@teste.com', 'senha123', first_name='Admin')
+        post = Post.objects.create(
+            nivel=self.n1, autor=admin, titulo='Aviso fechado', texto='Sem discussão.',
+            comentarios_habilitados=False,
+        )
+
+        resp = self.client.get(reverse('post_detalhe', args=[post.pk]))
+        self.assertContains(resp, 'Os comentários estão desativados neste post.')
+        self.assertNotContains(resp, 'Enviar comentário')
+
+        # Mesmo um POST direto, fora do formulário, não cria comentário.
+        self.client.post(reverse('post_detalhe', args=[post.pk]), {'texto': 'Furando o bloqueio'})
+        self.assertFalse(Comentario.objects.filter(post=post).exists())
+
+    def test_post_com_comentarios_segue_normal(self):
+        admin = Aluno.objects.create_superuser('admin@teste.com', 'senha123', first_name='Admin')
+        post = Post.objects.create(
+            nivel=self.n1, autor=admin, titulo='Aviso aberto', texto='Comentem!'
+        )
+        resp = self.client.get(reverse('post_detalhe', args=[post.pk]))
+        self.assertContains(resp, 'Enviar comentário')
+
+    def test_admin_cria_post_para_todos_os_niveis(self):
+        Aluno.objects.create_superuser('admin@teste.com', 'senha123', first_name='Admin')
+        self.client.login(username='admin@teste.com', password='senha123')
+        resp = self.client.post(reverse('novo_post'), {
+            'nivel': '', 'titulo': 'Comunicado', 'texto': 'Vale para todo mundo.',
+        })
+        post = Post.objects.get(titulo='Comunicado')
+        self.assertRedirects(resp, reverse('post_detalhe', args=[post.pk]))
+        self.assertIsNone(post.nivel)
 
     def test_post_de_outro_nivel_da_404(self):
         resp = self.client.get(reverse('post_detalhe', args=[self.post_n2.pk]))
@@ -105,3 +168,53 @@ class ComunidadeTests(TestCase):
         resp = self.client.get(reverse('excluir_comentario', args=[comentario.pk]))
         self.assertEqual(resp.status_code, 405)
         self.assertTrue(Comentario.objects.filter(pk=comentario.pk).exists())
+
+
+@override_settings(MEDIA_ROOT=MEDIA_TESTES)
+class AnexosDoPostTests(TestCase):
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(MEDIA_TESTES, ignore_errors=True)
+
+    def setUp(self):
+        self.n1 = Nivel.objects.get(numero=1)
+        Aluno.objects.create_superuser('admin@teste.com', 'senha123', first_name='Admin')
+        self.client.login(username='admin@teste.com', password='senha123')
+
+    def test_post_com_imagem_e_pdf(self):
+        resp = self.client.post(reverse('novo_post'), {
+            'nivel': self.n1.pk,
+            'titulo': 'Lista de problemas',
+            'texto': 'Segue a lista da semana.',
+            'imagem': SimpleUploadedFile('figura.png', b'png-fake', 'image/png'),
+            'arquivo': SimpleUploadedFile('lista.pdf', b'%PDF-1.4', 'application/pdf'),
+        })
+        post = Post.objects.get(titulo='Lista de problemas')
+        self.assertRedirects(resp, reverse('post_detalhe', args=[post.pk]))
+        self.assertTrue(post.imagem.name.endswith('.png'))
+        self.assertTrue(post.arquivo.name.endswith('.pdf'))
+
+        detalhe = self.client.get(reverse('post_detalhe', args=[post.pk]))
+        self.assertContains(detalhe, post.imagem.url)
+        self.assertContains(detalhe, post.arquivo.url)
+
+    def test_rejeita_extensoes_invalidas(self):
+        resp = self.client.post(reverse('novo_post'), {
+            'nivel': self.n1.pk,
+            'titulo': 'Tentativa',
+            'texto': 'x',
+            'imagem': SimpleUploadedFile('pagina.html', b'<script>', 'text/html'),
+            'arquivo': SimpleUploadedFile('planilha.xlsx', b'xx', 'application/zip'),
+        })
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(Post.objects.filter(titulo='Tentativa').exists())
+
+    def test_anexos_sao_opcionais(self):
+        resp = self.client.post(reverse('novo_post'), {
+            'nivel': self.n1.pk, 'titulo': 'Só texto', 'texto': 'Sem anexos.',
+        })
+        post = Post.objects.get(titulo='Só texto')
+        self.assertRedirects(resp, reverse('post_detalhe', args=[post.pk]))
+        self.assertFalse(post.imagem)
+        self.assertFalse(post.arquivo)

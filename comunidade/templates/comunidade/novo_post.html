@@ -8,7 +8,7 @@
 <h1>Novo post<span class="qed" aria-hidden="true"></span></h1>
 
 <div class="cartao">
-    <form method="post">
+    <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         {% if form.errors %}<p class="erros">Verifique os campos abaixo.</p>{% endif %}
         <p>
@@ -22,6 +22,20 @@
         <p>
             <label for="{{ form.texto.id_for_label }}">Texto</label>
             {{ form.texto }}
+        </p>
+        <p>
+            <label for="{{ form.imagem.id_for_label }}">Imagem (opcional)</label>
+            {{ form.imagem }}
+            {{ form.imagem.errors }}
+        </p>
+        <p>
+            <label for="{{ form.arquivo.id_for_label }}">Anexo em PDF (opcional)</label>
+            {{ form.arquivo }}
+            {{ form.arquivo.errors }}
+        </p>
+        <p class="campo-marcado">
+            {{ form.comentarios_habilitados }}
+            <label for="{{ form.comentarios_habilitados.id_for_label }}">Permitir comentários neste post</label>
         </p>
         <button type="submit" class="botao">Publicar</button>
     </form>

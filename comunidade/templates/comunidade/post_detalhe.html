@@ -8,15 +8,25 @@
 <article class="cartao">
     <h1 class="post-titulo">{{ post.titulo }}<span class="qed" aria-hidden="true"></span></h1>
     <div class="cartao-meta">
-        <span class="selo">{{ post.nivel.nome }}</span>
+        <span class="selo">{{ post.nome_do_nivel }}</span>
         <span>{{ post.autor.first_name|default:post.autor.email }}</span>
         {% if post.autor.is_staff %}<span class="selo selo-verde">Professor</span>{% endif %}
         <span>{{ post.criado_em|date:"d/m/Y H:i" }}</span>
     </div>
     <div class="cartao-texto">{{ post.texto }}</div>
+    {% if post.imagem %}
+    <a href="{{ post.imagem.url }}" target="_blank" rel="noopener">
+        <img class="post-imagem" src="{{ post.imagem.url }}" alt="Imagem do post: {{ post.titulo }}">
+    </a>
+    {% endif %}
+    {% if post.arquivo %}
+    <p><a class="botao" href="{{ post.arquivo.url }}" target="_blank" rel="noopener">📄 Abrir anexo (PDF)</a></p>
+    {% endif %}
 </article>
 
+{% if post.comentarios_habilitados or comentarios %}
 <h2>Comentários ({{ comentarios|length }})</h2>
+{% endif %}
 
 {% for comentario in comentarios %}
 <div class="cartao comentario">
@@ -40,9 +50,12 @@
     {% endif %}
 </div>
 {% empty %}
+{% if post.comentarios_habilitados %}
 <p class="aviso-vazio">Nenhum comentário ainda.</p>
+{% endif %}
 {% endfor %}
 
+{% if post.comentarios_habilitados %}
 <h2>Comentar</h2>
 <div class="cartao">
     <form method="post">
@@ -51,4 +64,7 @@
         <button type="submit" class="botao">Enviar comentário</button>
     </form>
 </div>
+{% else %}
+<p class="aviso-vazio">Os comentários estão desativados neste post.</p>
+{% endif %}
 {% endblock %}
