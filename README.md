@@ -1,11 +1,23 @@
 # Plataforma Curso Solução
 
 Plataforma web do **Curso Solução** (olimpíadas de matemática) feita em Django.
-Os alunos acessam aulas (material em PDF, gravação no YouTube e resolução) do(s)
-seu(s) nível(is) e participam de um fórum por nível na aba **Comunidade**.
+Alunos acessam as aulas (material em PDF, gravação no YouTube e resolução) do(s)
+seu(s) nível(is), acompanham o calendário de aulas e participam de um fórum por
+nível na aba **Comunidade**.
 
 **Níveis:** Nível 1 (6º/7º ano) · Nível 2 (8º/9º ano) · Nível 3 (Ensino Médio)
 — já cadastrados automaticamente no banco.
+
+## Funcionalidades
+
+- Login por email, com contas de **aluno**, **professor** e **superusuário**
+- Aulas por nível, com material, resolução, gravação embedada e comentários
+- Calendário de aulas (horários semanais, aulas extras, cancelamentos e recessos)
+- Comunidade: posts com imagem e anexos, comentários e moderação
+- Email de boas-vindas ao cadastrar alunos
+- Painel administrativo para gerenciar tudo
+
+**Stack:** Python 3.12+, Django 6, SQLite.
 
 ## Como rodar
 
@@ -13,7 +25,9 @@ Requisitos: Python 3.12+ instalado.
 
 ```bash
 # 1. Instalar dependências
-pip install django
+pip install -r requirements.txt
+
+# (opcional) configurar email: copie .env.exemplo para .env e preencha
 
 # 2. Criar o banco de dados (SQLite)
 python manage.py migrate
@@ -103,7 +117,7 @@ python manage.py test
 
 ## Estrutura
 
-- `core/` — alunos (login por email), níveis e aulas
+- `core/` — alunos e professores (login por email), níveis, aulas e calendário
 - `comunidade/` — fórum (posts e comentários por nível)
 - `config/` — configurações do projeto
 - `media/` — PDFs enviados pelo admin (não versionado)
